@@ -22,6 +22,7 @@ let directoryEntries = [], directoryCategories = [], pageAccessConfig = { catego
 let defaultFee = 200, feeStatusTitle = '', defaultReceiptMandatory = false;
 let currentWorkingAcademicYear = '';
 let isEditMode = false, editingPaymentGroup = {}, selectedStudentId = null;
+let userExplicitClass = '', userExplicitGender = '';
 let selectedGroupMemberIds = new Set();
 let editTouchedItemKeys = new Set();
 let availableFeeAcademicYears = [];
@@ -1485,6 +1486,9 @@ const populateClassDropdowns = () => {
     const allClassOpts = classes.map(c => `<option value="${c}">${c}</option>`).join('');
     document.getElementById('filter-class').innerHTML = `<option value="all">All Classes</option>` + opts;
     document.getElementById('entry-class').innerHTML = `<option value="">All Classes (Whole School)</option>` + opts;
+    if (userExplicitClass) {
+        document.getElementById('entry-class').value = userExplicitClass;
+    }
     document.getElementById('stu-info-class').innerHTML = `<option value="">-- Select --</option>` + allClassOpts;
     
     // Also populate bulk upload class dropdown
@@ -1506,18 +1510,26 @@ const resetStudentSelection = () => {
     selectedStudentId = null;
     selectedGroupMemberIds = new Set();
     pendingFeeSelectionsByYear = {};
-    document.getElementById('entry-student-input').value = '';
-    document.getElementById('student-suggestions').classList.add('hidden');
+    const input = document.getElementById('entry-student-input');
+    if (input) input.value = '';
+    document.getElementById('student-suggestions')?.classList.add('hidden');
     document.getElementById('grouped-students-panel')?.classList.add('hidden');
+
+    // Restore top Class and Gender filters to user's deliberate selection (or 'All' if none selected)
+    const classEl = document.getElementById('entry-class');
+    if (classEl) classEl.value = userExplicitClass || '';
+    const genderEl = document.getElementById('entry-gender');
+    if (genderEl) genderEl.value = userExplicitGender || '';
+
     updateStudentInputClearButton();
     populateFeeItemSelection();
 };
-document.getElementById('entry-class').addEventListener('change', () => {
+document.getElementById('entry-class').addEventListener('change', (e) => {
+    userExplicitClass = e.target.value;
     const currentInputVal = document.getElementById('entry-student-input')?.value || '';
     if (selectedStudentId) {
         const currentStudent = getStudentById(selectedStudentId);
-        const newClass = document.getElementById('entry-class').value;
-        if (newClass && currentStudent && currentStudent.class !== newClass) {
+        if (userExplicitClass && currentStudent && currentStudent.class !== userExplicitClass) {
             resetStudentSelection();
         }
     }
@@ -1525,8 +1537,15 @@ document.getElementById('entry-class').addEventListener('change', () => {
         populateStudentSuggestions(currentInputVal);
     }
 });
-document.getElementById('entry-gender').addEventListener('change', () => {
+document.getElementById('entry-gender').addEventListener('change', (e) => {
+    userExplicitGender = e.target.value;
     const currentInputVal = document.getElementById('entry-student-input')?.value || '';
+    if (selectedStudentId) {
+        const currentStudent = getStudentById(selectedStudentId);
+        if (userExplicitGender && currentStudent && currentStudent.gender !== userExplicitGender) {
+            resetStudentSelection();
+        }
+    }
     if (currentInputVal) {
         populateStudentSuggestions(currentInputVal);
     }
@@ -1578,13 +1597,18 @@ const populateStudentSuggestions = (searchTerm = '') => {
             `;
             d.onclick = () => {
                 selectedStudentId = s.id;
-                if (s.class) {
-                    const classSelect = document.getElementById('entry-class');
-                    if (classSelect) classSelect.value = s.class;
+                // Preserve top dropdowns as selected by user:
+                // If user did not select Class at top, keep it on All Classes ('').
+                // If user selected Class at top, keep user's selection.
+                const classSelect = document.getElementById('entry-class');
+                if (classSelect) {
+                    classSelect.value = userExplicitClass || '';
                 }
-                if (s.gender) {
-                    const genderSelect = document.getElementById('entry-gender');
-                    if (genderSelect) genderSelect.value = s.gender;
+                // If user did not select Gender at top, keep it on All Genders ('').
+                // If user selected Gender at top, keep user's selection.
+                const genderSelect = document.getElementById('entry-gender');
+                if (genderSelect) {
+                    genderSelect.value = userExplicitGender || '';
                 }
                 const grp = getStudentBillingGroup(s.id);
                 if (grp && Array.isArray(grp.memberIds) && grp.memberIds.length > 1) {
@@ -1611,7 +1635,13 @@ const populateStudentSuggestions = (searchTerm = '') => {
     }
 };
 document.getElementById('entry-student-input').addEventListener('focus', () => populateStudentSuggestions(''));
-document.getElementById('entry-student-input').addEventListener('input', e => { populateStudentSuggestions(e.target.value); updateStudentInputClearButton(); });
+document.getElementById('entry-student-input').addEventListener('input', e => {
+    if (!e.target.value.trim() && selectedStudentId) {
+        resetStudentSelection();
+    }
+    populateStudentSuggestions(e.target.value);
+    updateStudentInputClearButton();
+});
 document.getElementById('entry-student-clear-btn')?.addEventListener('click', () => {
     resetStudentSelection();
     document.getElementById('entry-student-input')?.focus();
@@ -1639,20 +1669,38 @@ document.getElementById('multi-entry-list')?.addEventListener('click', (e) => {
 
 const getNextReceiptNoForStaff = () => {
     const myPays = allPayments.filter(p => p.collectedBy === getCollectorKey() && p.receiptNo);
-    if (myPays.length === 0) return '';
-    const validPays = myPays.map(p => parseInt(p.receiptNo)).filter(n => !isNaN(n));
-    if(validPays.length === 0) return '';
-    return Math.max(...validPays) + 1;
+    if (myPays.length > 0) {
+        const validPays = myPays.map(p => parseInt(p.receiptNo, 10)).filter(n => !isNaN(n) && n > 0);
+        if (validPays.length > 0) return Math.max(...validPays) + 1;
+    }
+    const allValid = allPayments.map(p => parseInt(p.receiptNo, 10)).filter(n => !isNaN(n) && n > 0);
+    if (allValid.length > 0) return Math.max(...allValid) + 1;
+    return 1;
 };
 
 const checkReceiptMandatory = () => {
     let isReq = false;
+    let anyChecked = false;
     document.querySelectorAll('.fee-item-checkbox:checked').forEach(cb => {
+        anyChecked = true;
         const type = cb.dataset.itemType, key = cb.dataset.itemKey;
-        if(type === 'custom') { const item = feeItems.find(i=>i.key === key); if(item && item.isReceiptMandatory) isReq = true; }
-        else if(type === 'month') { if(defaultReceiptMandatory) isReq = true; }
+        if(type === 'custom') { 
+            const item = feeItems.find(i=>i.key === key); 
+            if(item && typeof item.isReceiptMandatory === 'boolean') {
+                if (item.isReceiptMandatory) isReq = true;
+            } else if (defaultReceiptMandatory) {
+                isReq = true;
+            }
+        }
+        else if(type === 'month') { 
+            if(defaultReceiptMandatory) isReq = true; 
+        }
     });
-    document.getElementById('receipt-req-star').classList.toggle('hidden', !isReq);
+    if (!anyChecked && defaultReceiptMandatory) {
+        isReq = true;
+    }
+    const star = document.getElementById('receipt-req-star');
+    if (star) star.classList.toggle('hidden', !isReq);
     return isReq;
 };
 const captureCurrentYearFeeSelections = () => {
@@ -3779,6 +3827,7 @@ onAuthStateChanged(auth, async (user) => {
             window.feeStatusTitle = feeStatusTitle;
             window.getNextReceiptNoForStaff = getNextReceiptNoForStaff;
             window.getCollectorKey = getCollectorKey;
+            checkReceiptMandatory();
 
             const fsh = document.getElementById('fee-status-title-header');
             if(fsh && feeStatusTitle) fsh.textContent = feeStatusTitle;

@@ -46,14 +46,18 @@ export const getGlobalNextReceiptNumber = () => {
 
 // Check if receipt is mandatory for this specific fee item or by default setting
 export const checkIsReceiptMandatoryForItem = (itemKey = '', itemType = '') => {
+    const isDefaultMandatory = Boolean(window.defaultReceiptMandatory);
     if (Array.isArray(window.feeItems) && window.feeItems.length > 0) {
-        const lowerKey = String(itemKey || '').toLowerCase();
-        const customItem = window.feeItems.find(i => String(i.key || '').toLowerCase() === lowerKey || String(i.name || '').toLowerCase() === lowerKey);
-        if (customItem && customItem.isReceiptMandatory !== undefined) {
-            return Boolean(customItem.isReceiptMandatory);
+        const lowerKey = String(itemKey || '').trim().toLowerCase();
+        const customItem = window.feeItems.find(i => 
+            String(i.key || '').trim().toLowerCase() === lowerKey || 
+            String(i.name || '').trim().toLowerCase() === lowerKey
+        );
+        if (customItem && typeof customItem.isReceiptMandatory === 'boolean') {
+            return customItem.isReceiptMandatory;
         }
     }
-    return Boolean(window.defaultReceiptMandatory);
+    return isDefaultMandatory;
 };
 
 /**
@@ -286,7 +290,7 @@ export const openFeeEntryEditModal = (options = {}) => {
     }
 
     // Receipt requirement indicator (Mandatory with red star vs Optional)
-    const isReceiptMandatory = checkIsReceiptMandatoryForItem(targetItemKey, options.itemType);
+    const isReceiptMandatory = checkIsReceiptMandatoryForItem(effectiveItemKey, options.itemType);
     const receiptReqStar = document.getElementById('ledger-pay-receipt-req');
     const receiptBadge = document.getElementById('ledger-pay-receipt-badge');
 
@@ -430,12 +434,15 @@ export const submitFeeEntryPayment = async () => {
 
     const isEdit = source === 'edit' || Boolean(existingPaymentId);
     const receiptRaw = document.getElementById('ledger-pay-receipt')?.value?.trim() || '';
-    let receiptNo = receiptRaw ? parseInt(receiptRaw, 10) : '';
+    let receiptNo = receiptRaw ? parseInt(receiptRaw, 10) : null;
+    if (receiptNo !== null && (isNaN(receiptNo) || receiptNo <= 0)) {
+        receiptNo = null;
+    }
 
     // Check mandatory receipt setting (item-level or global default)
     const isReceiptMandatory = checkIsReceiptMandatoryForItem(itemKey);
     if (isReceiptMandatory) {
-        if (!receiptRaw || isNaN(receiptNo) || receiptNo <= 0) {
+        if (!receiptNo) {
             showToast('Receipt number is mandatory. Please enter a receipt number.', 'error');
             const rcptInput = document.getElementById('ledger-pay-receipt');
             if (rcptInput) {
@@ -444,12 +451,6 @@ export const submitFeeEntryPayment = async () => {
                 setTimeout(() => rcptInput.classList.remove('ring-2', 'ring-rose-500'), 1500);
             }
             return;
-        }
-    } else {
-        if (!isEdit && (!receiptNo || isNaN(receiptNo))) {
-            receiptNo = getGlobalNextReceiptNumber();
-        } else if (isNaN(receiptNo)) {
-            receiptNo = '';
         }
     }
 
