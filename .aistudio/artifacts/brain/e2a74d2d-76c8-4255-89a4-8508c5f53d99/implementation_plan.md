@@ -1,116 +1,95 @@
-# Group Student Selection, Receipt Requirement UI, and Payment Mode Integration
+# Staff ID Card Profile Modal & Floating Hub Button Removal
 
-Enhance the Master Fee Ledger and Collection page with:
-1. **Vertical Student Selector for Family Groups**: In the shared fee modal, display a clean vertical list of individual students for family groups, all checked by default, allowing collectors to pay for the full group or select specific student(s) with dynamic automatic fee recalculation.
-2. **Mandatory vs. Optional Receipt Numbering**: Display a red asterisk `*` and `(Mandatory)` label when receipt numbers are enforced by institution settings, strictly blocking submission without a receipt; display `(Optional)` when optional.
-3. **Payment Mode in Fee Entry Tab**: Add a Payment Mode dropdown (Cash default, UPI, Bank Transfer, Cheque) directly adjacent to the Total Amount field in the main Entry tab (`#home`).
+Streamline Official Hub navigation and refine the Staff Profile modal into an authentic Vertical Badge ID Card:
+1. **Remove Floating Hub Switcher**: Eliminate the floating bottom-corner "Official Hub" button (`#hub-floating-switcher`) across `collection.html`, `admin.html`, and `result.html`.
+2. **Remove Profile from Welcome Banner**: Keep the Staff Profile trigger exclusively in the top header (`#official-my-profile-btn`), removing the duplicate button from the welcome banner in `official.html`.
+3. **Vertical Badge ID Card Design**: Redesign the Profile modal into an authentic vertical physical ID card badge (`max-w-sm` / `w-[360px]`) displaying institution header, staff photo (or clean blank frame if absent), bold staff name, designation, phone, email, and department access.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> - **Confirmed Decision 1 (Fee Calculation)**: When individual students are checked/unchecked in a family group, the fee amount will dynamically recalculate based on the per-student fee rates.
-> - **Confirmed Decision 2 (Payment Mode Choices)**: The Entry tab Payment Mode selector will support `Cash` (default), `UPI / GPay / PhonePe`, `Bank Transfer`, and `Cheque`.
-> - **Confirmed Decision 3 (Receipt Enforcement)**: When receipt numbering is mandatory in settings, the red asterisk will appear and submission will be blocked until a valid receipt is entered. When optional, it will display `(Optional)`.
+> - **Confirmed Decision 1 (ID Card Layout)**: Vertical badge ID card format with institution header band, badge slot, staff portrait, clean typographic hierarchy, and credentials grid.
+> - **Confirmed Decision 2 (Highlighted Details)**: Staff photo, full name, designation/role, phone number, email address, staff key/ID, and department permissions.
+> - **Confirmed Decision 3 (Photo Handling)**: If a photo is uploaded, display it crisply with rounded frame; if no photo is available, keep the photo frame clean and blank (empty avatar silhouette/initials, without falling back to institution logo).
 
 ---
 
 ### 1. Overview & Core Concept
 
 - **What It Does**:
-  - In **Master Fee Ledger**, clicking an unpaid month cell for a sibling/family group opens the fee modal showing all children listed vertically with checkboxes (checked by default). The collector can keep all selected or check only the specific child (e.g. paying for one sibling this week and the other next week). The fee amount automatically recalculates based on selection.
-  - The receipt input dynamically indicates whether receipt numbers are `(Mandatory)` with a red star `*` or `(Optional)`.
-  - In the **Fee Entry Tab** (`#home`), a dedicated Payment Mode dropdown next to Total Amount allows specifying payment method (Cash, UPI, Bank Transfer, Cheque), persisting it across transactions.
+  - Cleans up the UI on Collection, Admin, and Result portals by removing the persistent bottom-right floating switcher button.
+  - In `official.html`, eliminates the redundant "Staff Profile" button inside the welcome hero, making the header account button the single, unified profile entry point.
+  - Clicking "Staff Profile" in the header presents a compact, elegant Vertical ID Card modal instead of a generic wide stretched-out dialog.
 
 ---
 
 ### 2. User Experience & Visual Design
 
-#### A. Master Fee Ledger Group Student Selection (Modal)
-- Replaces static radio buttons with an interactive vertical list of student cards:
-  - Each item: Checkbox + Student Name + Class Badge + Adm No + Student Fee (₹).
-  - "Select All" / "Deselect All" quick toggles.
-  - Live summary: e.g. "Selected: 2 of 3 students (₹400 total)".
-  - Dynamic amount sync: Changing selections updates `#ledger-pay-amount` instantly.
-  - Validation: At least one student must be checked; otherwise, submit button disables with helpful guidance.
+#### A. Floating Switcher Cleanup
+- `scripts/shared/hub-navigation.js`: Remove `#hub-floating-switcher` creation entirely. Top-bar navigation back to Official Hub remains cleanly in the header where appropriate.
 
-#### B. Dynamic Receipt Requirement UI
-- Modal inspects `window.defaultReceiptMandatory`.
-- If mandatory:
-  - Label: `Receipt No <span class="text-red-500 font-bold">*</span> <span class="text-rose-600 font-semibold text-[10px]">(Mandatory)</span>`
-  - Submitting without receipt triggers an inline validation alert and blocks saving.
-- If optional:
-  - Label: `Receipt No <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>`
-  - Submitting without receipt is permitted and auto-generates or leaves clean.
+#### B. Official Welcome Section
+- The Welcome Hero retains:
+  - Institution badge
+  - Welcome greeting: `"Welcome, [Staff Name]"`
+  - Role description
+- The duplicate `"Staff Profile"` button is removed, leaving a clean, uncluttered banner.
 
-#### C. Payment Mode in Entry Tab (`#home`)
-- Positioned alongside `Total Amount (₹)` in the action section:
-  ```
-  ┌───────────────────────┬───────────────────────────┬──────────────────────┐
-  │ Total Amount (₹)      │ Payment Mode              │ [ Save Fee Payment ] │
-  │ [   ₹400            ] │ [ Cash ▼                ] │                      │
-  └───────────────────────┴───────────────────────────┴──────────────────────┘
-  ```
-- Options:
-  - `Cash` (Default)
-  - `UPI / GPay / PhonePe`
-  - `Bank Transfer`
-  - `Cheque`
-- Integrated into confirmation popup and stored in Firestore payment documents (`paymentMode`).
+#### C. Vertical Badge ID Card Modal
+- **Container**: `max-w-sm w-full mx-auto rounded-3xl overflow-hidden shadow-2xl bg-white border border-slate-200`
+- **Visual Anatomy**:
+  - **Lanyard Slot / Clip Bar**: Realistic badge slot cutout at the top.
+  - **Header Band**: Institution primary color gradient with Institution Logo, Name, and Reg No.
+  - **Portrait Photo**:
+    - With photo: Crisp `w-28 h-28` rounded-2xl object-cover with subtle border and shadow.
+    - Without photo: Clean blank avatar silhouette with initials (no institution logo fallback).
+  - **Identity Block**:
+    - Full Name in high-contrast bold typography (`text-xl font-black text-slate-900`).
+    - Role / Designation pill (e.g. `Teacher`, `Administrator`, `Treasurer`).
+  - **Credentials Grid**:
+    - Phone / Mobile
+    - Email address
+    - Assigned Classes / Duty Details (if applicable)
+    - Authorized Department Permissions (Fee Collection, Result, Admin)
+  - **Card Footer**: Institution signature bar and Close button.
 
 ---
 
 ### 3. Key Product Decisions & Trade-Offs
 
-- **Dynamic Group Pay vs Individual Pay in Ledger**:
-  - *Chosen Approach*: When a single student is selected from a group, save the payment targeted specifically to that student (`studentId`, `studentName`, `studentClass`). When multiple are selected, save either as a consolidated group payment or split entries linked by `transactionId` and `billingGroupId`.
-  - *Why*: Allows flexible partial-family payments while keeping financial tracking and receipts accurate.
-- **Form Cohesion**:
-  - *Chosen Approach*: Put Payment Mode next to Total Amount in `#home` so collectors make amount and tender choices at the same decision step before saving.
+- **Dedicated ID Card Modal vs. Reusing Generic Detail Modal**:
+  - *Chosen Approach*: Replace the stretched `official-detail-dialog` implementation for profile with a dedicated compact ID card dialog (`id-badge-modal`) constrained to `max-w-sm` on both mobile and desktop.
+  - *Why*: Prevents horizontal stretching and provides an authentic, printable ID card experience on any screen size.
+- **Photo Fallback Fix**:
+  - *Chosen Approach*: When a staff member does not have a photo, render a clean blank silhouette placeholder instead of `onerror="this.src='logo.png'"`, ensuring accuracy according to user requirements.
 
 ---
 
 ### 4. Technical Architecture & Data Strategy
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       Master Fee Ledger Group Pay Flow                      │
-│                                                                             │
-│  [Click Month Cell] ──► [openFeeEntryEditModal]                             │
-│                                │                                            │
-│                                ▼                                            │
-│                 Render Vertical Student Checkboxes                          │
-│                 [x] 1. Muhammed Fayis (Class 6) - ₹200                      │
-│                 [x] 2. Fatima Hiba   (Class 4) - ₹200                      │
-│                                │                                            │
-│                 Toggle ──► Recalculate #ledger-pay-amount                   │
-│                                │                                            │
-│  [Check Mandatory Setting] ──► Set Red Star (*) + Enforce Input             │
-└────────────────────────────────┬────────────────────────────────────────────┘
-                                 │
-                                 ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          Entry Tab (#home) Flow                             │
-│                                                                             │
-│  [Total Amount: ₹400] + [Payment Mode: Cash ▼]                              │
-│                                │                                            │
-│                                ▼                                            │
-│  [processPaymentSubmit] ──► Include paymentMode in payload & batch write    │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    scripts/shared/hub-navigation.js         │
+│   - Remove #hub-floating-switcher creation                  │
+│   - Retain optional topbar nav link safely                  │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│              scripts/pages/official-shared-bootstrap.js     │
+│   1. Welcome Banner: Remove #hub-profile-quick button       │
+│   2. openMyProfileModal(): Render Vertical Badge ID Card    │
+│      - Institution Header + Logo                            │
+│      - Crisp Photo OR Clean Blank Silhouette Frame          │
+│      - Name, Designation, Phone, Email, Access Badges       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 #### Files to Update:
-1. `collection.html`:
-   - Redesign `#ledger-pay-group-scope-wrap` into vertical student list container (`#ledger-pay-group-students-list`).
-   - Add `#entry-payment-mode` select in Entry tab alongside `#total-amount`.
-   - Update receipt label elements to support dynamic mandatory/optional badges.
-2. `scripts/pages/collection/shared-fee-modal.js`:
-   - Render vertical students list with checkboxes when `unit.isGroup` is true.
-   - Attach change listeners on checkboxes to auto-recalculate total fee.
-   - Check `window.defaultReceiptMandatory` to update red star and `(Mandatory)`/`(Optional)` badge.
-   - Enforce receipt number validation when mandatory.
-   - Target selected students in `submitFeeEntryPayment`.
-3. `scripts/pages/collection-page.js`:
-   - Read `#entry-payment-mode` in `processPaymentSubmit`.
-   - Include `paymentMode` in payment payload.
-   - Display Payment Mode in payment confirmation modal.
-   - Sync `entry-payment-mode` when editing an existing payment.
+1. `scripts/shared/hub-navigation.js`:
+   - Remove floating quick-switcher code.
+2. `scripts/pages/official-shared-bootstrap.js`:
+   - Remove `#hub-profile-quick` from dashboard welcome banner.
+   - Refactor `openMyProfileModal()` to format profile as a Vertical Badge ID Card.
+   - Update `openOfficialDetailModal` styling or create dedicated card dialog container.
+3. Verification:
+   - Run regression gate and applet compilation to verify.

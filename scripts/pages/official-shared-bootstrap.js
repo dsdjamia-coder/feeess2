@@ -202,9 +202,39 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
       document.body.classList.remove('overflow-hidden');
     };
 
+    const closeIdCardModal = () => {
+      const modal = document.getElementById('official-id-card-modal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('overflow-hidden');
+    };
+
+    const openIdCardModal = (cardHtml = '') => {
+      const contentEl = document.getElementById('official-id-card-content');
+      const modal = document.getElementById('official-id-card-modal');
+      if (!contentEl || !modal) {
+        openOfficialDetailModal('Staff ID Card', cardHtml);
+        return;
+      }
+      contentEl.innerHTML = cardHtml;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('overflow-hidden');
+    };
+
     document.getElementById('official-detail-close')?.addEventListener('click', closeOfficialDetailModal);
     document.getElementById('official-detail-modal')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) closeOfficialDetailModal(); });
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeOfficialDetailModal(); });
+    document.getElementById('official-id-card-close')?.addEventListener('click', closeIdCardModal);
+    document.getElementById('official-id-card-modal')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) closeIdCardModal(); });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeOfficialDetailModal();
+        closeIdCardModal();
+      }
+    });
 
     document.querySelectorAll('.tab-link').forEach((btn) => btn.addEventListener('click', (event) => { event.preventDefault(); setTab(btn.dataset.tab); }));
     document.getElementById('mobile-menu-btn')?.addEventListener('click', (e) => {
@@ -413,12 +443,6 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
                 <h3 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Welcome, ${escapeHtml(userName)}</h3>
                 <p class="text-xs sm:text-sm text-slate-300 font-medium mt-1">Logged in as <b class="text-white">${escapeHtml(userRoleLabel)}</b>. Choose an access portal below to continue.</p>
               </div>
-              <div class="flex items-center gap-2.5">
-                <button type="button" id="hub-profile-quick" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all backdrop-blur-sm cursor-pointer">
-                  <i class="fas fa-user-circle"></i>
-                  <span>Staff Profile</span>
-                </button>
-              </div>
             </div>
           </div>
 
@@ -427,11 +451,6 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
             ${moduleCardsHtml}
           </div>
         </div>`;
-
-      // Event bindings
-      document.getElementById('hub-profile-quick')?.addEventListener('click', () => {
-        openMyProfileModal();
-      });
 
       // Event bindings
       document.querySelectorAll('[data-open-tab]').forEach((btn) => {
@@ -818,7 +837,7 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
           <!-- Profile Header Banner -->
           <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white shadow-md">
             <div class="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-white/20 bg-slate-800 flex-shrink-0 shadow">
-              <img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(staff.name || 'Staff')}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='assets/images/logo.png'">
+              ${(staff.photo || staff.image) ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(staff.name || 'Staff')}" class="w-full h-full object-cover" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.classList.remove('hidden');"><div class="hidden w-full h-full bg-slate-800 flex items-center justify-center text-slate-400"><i class="fas fa-user text-2xl"></i></div>` : `<div class="w-full h-full bg-slate-800 flex items-center justify-center text-slate-400"><i class="fas fa-user text-2xl"></i></div>`}
             </div>
             <div class="text-center sm:text-left flex-1 min-w-0">
               <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
@@ -933,8 +952,7 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
           <div class="staff-compact-card cursor-pointer group" data-staff-id="${escapeHtml(staff.id)}">
             <div>
               <div class="flex items-start justify-between gap-2 mb-3">
-                <div class="flex items-center gap-3">
-                  <img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(staff.name || 'Staff')}" class="w-11 h-11 rounded-xl object-cover border border-slate-200 bg-slate-50 flex-shrink-0 shadow-2xs group-hover:border-blue-400 transition-colors" onerror="this.onerror=null;this.src='assets/images/logo.png'">
+                  ${(staff.photo || staff.image) ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(staff.name || 'Staff')}" class="w-11 h-11 rounded-xl object-cover border border-slate-200 bg-slate-50 flex-shrink-0 shadow-2xs group-hover:border-blue-400 transition-colors" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.classList.remove('hidden');"><div class="hidden w-11 h-11 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-300 flex-shrink-0"><i class="fas fa-user text-sm"></i></div>` : `<div class="w-11 h-11 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center text-slate-300 flex-shrink-0"><i class="fas fa-user text-sm"></i></div>`}
                   <div class="min-w-0">
                     <h4 class="font-extrabold text-slate-900 text-sm leading-tight truncate group-hover:text-blue-600 transition-colors">${escapeHtml(staff.name || '--')}</h4>
                     <span class="text-[11px] font-semibold text-slate-500">${escapeHtml(staff.role || staff.type || 'Staff')}</span>
@@ -1109,29 +1127,124 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
     const openMyProfileModal = () => {
       const profile = getCurrentSessionProfile();
       const isDirectory = userSession?.source === 'directory';
-      const label = isDirectory ? (profile.values?.name || userSession?.name || 'User') : (profile.name || userSession?.name || 'User');
-      const photo = isDirectory ? getPhoto(profile.values || {}) : getPhoto(profile || {});
-      const userType = isDirectory ? (getDirectoryCategory(profile.categoryId)?.name || userSession?.type || 'Category User') : (profile.type || userSession?.type || '--');
-      const entries = isDirectory ? getDirectoryProfileEntries(profile) : (userSession?.source === 'staff' ? getStaffProfileEntries(profile) : renderKeyValueGrid(profile, ['photo', 'image', 'logo']));
-      const detailHtml = Array.isArray(entries) ? renderEntriesGrid(entries) : entries;
+      const label = isDirectory ? (profile.values?.name || userSession?.name || 'Staff Member') : (profile.name || userSession?.name || 'Staff Member');
+      const userType = isDirectory ? (getDirectoryCategory(profile.categoryId)?.name || userSession?.type || 'Staff') : (profile.role || profile.designation || profile.type || userSession?.type || 'Staff');
+
+      const rawPhoto = isDirectory ? (profile.values?.photo || profile.values?.image) : (profile.photo || profile.image);
+      const hasPhoto = Boolean(rawPhoto && typeof rawPhoto === 'string' && rawPhoto.trim() !== '' && !rawPhoto.includes('assets/images/logo.png'));
+
+      const phone = isDirectory ? (profile.values?.phone || profile.values?.mobile || userSession?.phone || '') : (profile.phone || userSession?.phone || '');
+      const email = isDirectory ? (profile.values?.email || userSession?.email || '') : (profile.email || userSession?.email || userSession?.username || '');
+      const msr = isDirectory ? (profile.values?.msr || profile.values?.id || '') : (profile.msr || profile.id || '');
+      const dutyClasses = isDirectory ? (profile.values?.dutyClasses || '') : (Array.isArray(profile.dutyClasses) ? profile.dutyClasses.join(', ') : (profile.dutyClasses || ''));
+      const status = profile.isActive !== false ? 'Active' : 'Inactive';
       const access = getAllowedPageLabels();
-      openOfficialDetailModal('My Official Profile', `
-        <div class="space-y-4">
-          <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white shadow-md">
-            <img src="${escapeHtml(photo)}" onerror="this.src='assets/images/logo.png'" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 bg-slate-800 flex-shrink-0" alt="${escapeHtml(label)}">
-            <div class="text-center sm:text-left flex-1 min-w-0">
-              <div class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 border border-white/25 mb-1">Official Account</div>
-              <h3 class="text-xl font-extrabold text-white truncate">${escapeHtml(label)}</h3>
-              <p class="text-xs font-semibold text-indigo-200 mt-0.5">${escapeHtml(userType)}</p>
-              <div class="mt-2.5 flex flex-wrap gap-1.5">${access.map((item) => `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/15 text-white"><i class="fas fa-check-circle text-emerald-400 mr-1"></i>${escapeHtml(item)}</span>`).join('')}</div>
-            </div>
+      const instName = resolveInstitutionName(institutionConfig) || 'Madrasa / Institution';
+      const instReg = institutionConfig?.regNo || institutionConfig?.code || '';
+
+      const photoHtml = hasPhoto
+        ? `<div class="relative mx-auto -mt-14 w-28 h-28 rounded-2xl p-1 bg-white shadow-xl border border-slate-200">
+             <img src="${escapeHtml(rawPhoto)}" class="w-full h-full rounded-xl object-cover bg-slate-100" alt="${escapeHtml(label)}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full rounded-xl bg-slate-100 border border-slate-200 flex flex-col items-center justify-center text-slate-300\\'><i class=\\'fas fa-user text-3xl mb-1 text-slate-300\\'></i><span class=\\'text-[9px] font-bold text-slate-400 uppercase\\'>No Photo</span></div>';">
+           </div>`
+        : `<div class="relative mx-auto -mt-14 w-28 h-28 rounded-2xl p-1 bg-white shadow-xl border border-slate-200">
+             <div class="w-full h-full rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400">
+               <i class="fas fa-user text-3xl text-slate-300 mb-1"></i>
+               <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">No Photo</span>
+             </div>
+           </div>`;
+
+      const idCardHtml = `
+        <div class="w-full bg-white select-none">
+          <!-- Top Lanyard Slot Cutout Bar -->
+          <div class="bg-slate-900 pt-3 pb-2 px-4 flex justify-center">
+            <div class="w-14 h-2.5 rounded-full bg-slate-800 border border-slate-700/80 shadow-inner"></div>
           </div>
-          <div class="bg-white p-2">
-            <h4 class="font-extrabold text-xs text-slate-400 uppercase tracking-wider mb-2">Account Profile Details</h4>
-            ${detailHtml}
+
+          <!-- Institution Header Banner -->
+          <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-5 pt-3 pb-16 text-center relative">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-white/10 text-emerald-300 border border-white/10 mb-1.5">
+              <i class="fas fa-id-badge text-emerald-400"></i> Staff Identity Card
+            </div>
+            <h4 class="text-base font-black tracking-tight text-white uppercase">${escapeHtml(instName)}</h4>
+            ${instReg ? `<p class="text-[10px] font-semibold text-slate-400 tracking-wider">Reg No: ${escapeHtml(instReg)}</p>` : ''}
+          </div>
+
+          <!-- Photo Container & Body Content -->
+          <div class="px-5 pb-5">
+            ${photoHtml}
+
+            <!-- Identity Core -->
+            <div class="text-center mt-3">
+              <h3 class="text-xl font-black text-slate-900 tracking-tight leading-tight">${escapeHtml(label)}</h3>
+              <div class="mt-1">
+                <span class="inline-block px-3 py-0.5 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  ${escapeHtml(userType)}
+                </span>
+              </div>
+            </div>
+
+            <!-- Details List -->
+            <div class="mt-5 space-y-2 text-left bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
+              ${phone ? `
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="text-slate-500 font-semibold flex items-center gap-1.5"><i class="fas fa-phone-alt text-slate-400 text-[11px] w-3.5"></i> Phone</span>
+                  <span class="font-bold text-slate-800 text-right truncate">${escapeHtml(phone)}</span>
+                </div>` : ''}
+
+              ${email ? `
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="text-slate-500 font-semibold flex items-center gap-1.5"><i class="fas fa-envelope text-slate-400 text-[11px] w-3.5"></i> Email</span>
+                  <span class="font-bold text-slate-800 text-right truncate max-w-[180px]">${escapeHtml(email)}</span>
+                </div>` : ''}
+
+              ${msr ? `
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="text-slate-500 font-semibold flex items-center gap-1.5"><i class="fas fa-hashtag text-slate-400 text-[11px] w-3.5"></i> ID / MSR</span>
+                  <span class="font-bold text-slate-800 text-right">${escapeHtml(msr)}</span>
+                </div>` : ''}
+
+              ${dutyClasses ? `
+                <div class="flex items-center justify-between gap-2 text-xs">
+                  <span class="text-slate-500 font-semibold flex items-center gap-1.5"><i class="fas fa-chalkboard text-slate-400 text-[11px] w-3.5"></i> Classes</span>
+                  <span class="font-bold text-slate-800 text-right">${escapeHtml(dutyClasses)}</span>
+                </div>` : ''}
+
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="text-slate-500 font-semibold flex items-center gap-1.5"><i class="fas fa-circle text-emerald-500 text-[10px] w-3.5"></i> Status</span>
+                <span class="font-bold text-emerald-600 uppercase text-[11px]">${escapeHtml(status)}</span>
+              </div>
+            </div>
+
+            <!-- Department Access Badges -->
+            <div class="mt-4 text-center">
+              <div class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5">Authorized Department Access</div>
+              <div class="flex flex-wrap gap-1.5 justify-center">
+                ${access.map((item) => `
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    <i class="fas fa-check text-emerald-500 text-[9px]"></i>
+                    ${escapeHtml(item)}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Card Bottom Bar -->
+            <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+              <span>Verified ID</span>
+              <span>Official Record</span>
+            </div>
+
+            <!-- Action Button -->
+            <button type="button" id="official-id-card-done-btn" class="mt-4 w-full py-2.5 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md active:scale-95 transition-all cursor-pointer border-none">
+              Close ID Card
+            </button>
           </div>
         </div>
-      `);
+      `;
+
+      openIdCardModal(idCardHtml);
+
+      document.getElementById('official-id-card-done-btn')?.addEventListener('click', closeIdCardModal);
     };
 
     const renderHome = () => {
@@ -1153,7 +1266,7 @@ import { signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } fro
           <div class="official-me-hero p-5 sm:p-7 text-white">
             <div class="grid md:grid-cols-[180px_1fr] gap-5 items-center">
               <div class="text-center">
-                <img src="${escapeHtml(photo)}" onerror="this.src='assets/images/logo.png'" class="official-me-photo mx-auto" alt="${escapeHtml(label)}">
+                ${hasPhoto ? `<img src="${escapeHtml(rawPhoto)}" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" class="official-me-photo mx-auto" alt="${escapeHtml(label)}"><div class="hidden official-me-photo mx-auto bg-white/20 border border-white/30 flex items-center justify-center text-white/50"><i class="fas fa-user text-5xl"></i></div>` : `<div class="official-me-photo mx-auto bg-white/20 border border-white/30 flex items-center justify-center text-white/50"><i class="fas fa-user text-5xl"></i></div>`}
               </div>
               <div>
                 <div class="inline-flex px-3 py-1 rounded-full text-xs font-black bg-white/20 border border-white/25 backdrop-blur">Read-only Official Profile</div>

@@ -293,6 +293,20 @@
         <div id="official-detail-body" class="max-h-[calc(90vh-74px)] overflow-auto p-4"></div>
       </div>
     </div>
+
+    <!-- Dedicated Vertical Staff ID Card Modal -->
+    <div id="official-id-card-modal" class="fixed inset-0 z-[1100] hidden items-center justify-center bg-slate-950/75 backdrop-blur-xs p-3 no-print" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl bg-white border border-slate-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+        <!-- Floating Close Button -->
+        <button id="official-id-card-close" type="button" class="absolute top-3 right-3 z-30 h-8 w-8 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer border-none" aria-label="Close ID card">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+
+        <div id="official-id-card-content" class="overflow-y-auto max-h-[92vh]">
+          <!-- Dynamically populated vertical ID badge -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="scripts/pages/official-shared-bootstrap.js"></script>

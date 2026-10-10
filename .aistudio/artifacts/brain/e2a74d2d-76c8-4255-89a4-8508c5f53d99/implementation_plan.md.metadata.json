@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for: 1) Individual and multi-student vertical selection with dynamic fee calculation inside Master Fee Ledger group payment modal; 2) Dynamic mandatory/optional receipt numbering indicator with red star enforcement; 3) Payment Mode dropdown (Cash default, UPI, Bank Transfer, Cheque) in the Fee Entry tab alongside Total Amount.",
-  "updatedAt":  "2026-10-10T10:17:58.744327613Z",
+  "summary":  "Implementation plan to: 1) Remove unnecessary floating bottom-corner 'Official Hub' button across collection, admin, and result pages; 2) Remove redundant 'Staff Profile' button from the Official Hub welcome banner; 3) Transform header-triggered Profile modal into an elegant, authentic Vertical Badge ID Card with clear photo display and clean blank avatar placeholder when no photo exists.",
+  "updatedAt":  "2026-10-10T11:03:37.425070917Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
