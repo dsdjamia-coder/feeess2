@@ -72,7 +72,7 @@ service cloud.firestore {
         // Collection UI stores dates as YYYY-MM-DD strings for reports.
         && request.resource.data.paymentDate is string
         && (!('timestamp' in request.resource.data) || request.resource.data.timestamp is number)
-        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp || request.resource.data.updatedAt is string);
     }
 
     function hasResultStaffAccess(institutionId) {
@@ -193,6 +193,12 @@ service cloud.firestore {
     }
 
     match /institutions/{institutionId}/academicYears/{yearId}/payments/{docId} {
+      allow read: if isAdmin(institutionId) || isCollectionSession();
+      allow create, update: if isAdmin(institutionId) || (isCollectionSession() && validPaymentWrite());
+      allow delete: if isAdmin(institutionId) || isCollectionSession();
+    }
+
+    match /institutions/{institutionId}/years/{yearId}/payments/{docId} {
       allow read: if isAdmin(institutionId) || isCollectionSession();
       allow create, update: if isAdmin(institutionId) || (isCollectionSession() && validPaymentWrite());
       allow delete: if isAdmin(institutionId) || isCollectionSession();

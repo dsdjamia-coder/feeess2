@@ -302,8 +302,14 @@ export const submitFeeEntryPayment = async () => {
     const amountInput = document.getElementById('ledger-pay-amount');
     const amount = Number(amountInput?.value || 0);
 
+    const isEdit = source === 'edit' || Boolean(existingPaymentId);
     const receiptRaw = document.getElementById('ledger-pay-receipt')?.value?.trim() || '';
-    const receiptNo = receiptRaw ? parseInt(receiptRaw, 10) : '';
+    let receiptNo = receiptRaw ? parseInt(receiptRaw, 10) : '';
+    if (!isEdit && (!receiptNo || isNaN(receiptNo))) {
+        receiptNo = getGlobalNextReceiptNumber();
+    } else if (isNaN(receiptNo)) {
+        receiptNo = '';
+    }
 
     const paymentDate = document.getElementById('ledger-pay-date')?.value || new Date().toISOString().split('T')[0];
     const mode = document.getElementById('ledger-pay-mode')?.value || 'Cash';
@@ -317,7 +323,7 @@ export const submitFeeEntryPayment = async () => {
 
     // Check mandatory receipt setting
     const isReceiptMandatory = Boolean(window.defaultReceiptMandatory);
-    if (isReceiptMandatory && (!receiptRaw || isNaN(receiptNo))) {
+    if (isReceiptMandatory && (!receiptNo || isNaN(receiptNo))) {
         showToast('Receipt number is required by institution configuration.', 'error');
         return;
     }
@@ -336,22 +342,24 @@ export const submitFeeEntryPayment = async () => {
             window.AppSession?.getStaffAccess?.()?.loginId ||
             'admin@institution.edu';
 
-        const isEdit = source === 'edit' || Boolean(existingPaymentId);
         let savedPaymentRecord = null;
 
         if (isEdit && existingPaymentId) {
             // EDIT EXISTING PAYMENT
             const payRef = doc(db, `${BASE_PATH}/payments`, existingPaymentId);
             const updatePayload = {
+                studentId: studentId,
                 amount: amount,
                 receiptNo: receiptNo || '',
                 paymentDate: paymentDate,
                 paymentMode: mode,
                 updatedAt: new Date().toISOString()
             };
-            batch.update(payRef, updatePayload);
-            batch.update(doc(db, `${BASE_PATH}/years/${academicYear}/payments`, existingPaymentId), updatePayload);
-            batch.update(doc(db, `${BASE_PATH}/academicYears/${cleanYear}/payments`, existingPaymentId), updatePayload);
+            batch.set(payRef, updatePayload, { merge: true });
+            if (academicYear) {
+                batch.set(doc(db, `${BASE_PATH}/years/${academicYear}/payments`, existingPaymentId), updatePayload, { merge: true });
+                batch.set(doc(db, `${BASE_PATH}/academicYears/${cleanYear}/payments`, existingPaymentId), updatePayload, { merge: true });
+            }
 
             savedPaymentRecord = {
                 id: existingPaymentId,
