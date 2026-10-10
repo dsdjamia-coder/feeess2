@@ -172,10 +172,115 @@ export const openFeeEntryEditModal = (options = {}) => {
         classTag.textContent = unit ? `Class: ${unit.classes?.join(', ')}` : `Class: ${student?.class || '-'}`;
     }
 
-    // Group Scope Wrap
+    // Group Scope Wrap: Render vertical student list for group selection
     const scopeWrap = document.getElementById('ledger-pay-group-scope-wrap');
-    if (scopeWrap) {
-        scopeWrap.classList.toggle('hidden', !isGroup);
+    const studentsListEl = document.getElementById('ledger-pay-group-students-list');
+    const countBadgeEl = document.getElementById('ledger-group-selected-count');
+    const toggleAllBtn = document.getElementById('ledger-group-toggle-all-btn');
+
+    if (isGroup && unit?.students && unit.students.length > 0 && !isEdit) {
+        if (scopeWrap) scopeWrap.classList.remove('hidden');
+
+        // Total fee & per-student calculation
+        const totalFee = Number(unit.fee || (200 * unit.students.length));
+        const defaultPerStudent = Math.round(totalFee / unit.students.length);
+
+        let listHtml = '';
+        unit.students.forEach((s, idx) => {
+            const studentFee = Number(s.fee || defaultPerStudent);
+            listHtml += `
+                <label class="flex items-center justify-between p-2 rounded-lg bg-white border border-amber-200/80 hover:bg-amber-100/40 cursor-pointer transition select-none group-student-row">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" class="ledger-group-student-cb w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                            data-student-id="${escapeHtml(s.id)}"
+                            data-student-name="${escapeHtml(s.name)}"
+                            data-student-class="${escapeHtml(s.class || s.studentClass || '-')}"
+                            data-student-adm="${escapeHtml(s.adm || '')}"
+                            data-student-fee="${studentFee}"
+                            checked>
+                        <div>
+                            <div class="font-bold text-slate-800 text-xs">${idx + 1}. ${escapeHtml(s.name)}</div>
+                            <div class="text-[10px] text-slate-500">
+                                Class: <span class="font-semibold text-slate-700">${escapeHtml(s.class || s.studentClass || '-')}</span>
+                                ${s.adm ? ` | Adm: <span class="font-mono">${escapeHtml(s.adm)}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200/60">₹${studentFee}</span>
+                    </div>
+                </label>
+            `;
+        });
+        if (studentsListEl) studentsListEl.innerHTML = listHtml;
+
+        const updateGroupSelectionState = () => {
+            const cbs = Array.from(document.querySelectorAll('.ledger-group-student-cb'));
+            const checkedCbs = cbs.filter(cb => cb.checked);
+            let dynamicTotal = 0;
+            checkedCbs.forEach(cb => {
+                dynamicTotal += Number(cb.dataset.studentFee || defaultPerStudent);
+            });
+
+            const amtEl = document.getElementById('ledger-pay-amount');
+            if (amtEl) amtEl.value = dynamicTotal;
+
+            if (countBadgeEl) {
+                if (checkedCbs.length === cbs.length) {
+                    countBadgeEl.textContent = `All Selected (${cbs.length})`;
+                    countBadgeEl.className = 'text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded';
+                } else if (checkedCbs.length === 0) {
+                    countBadgeEl.textContent = 'None Selected (0)';
+                    countBadgeEl.className = 'text-[10px] font-bold text-rose-800 bg-rose-100/90 px-1.5 py-0.5 rounded';
+                } else {
+                    countBadgeEl.textContent = `${checkedCbs.length} of ${cbs.length} Selected`;
+                    countBadgeEl.className = 'text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded';
+                }
+            }
+
+            if (toggleAllBtn) {
+                toggleAllBtn.textContent = checkedCbs.length === cbs.length ? 'Deselect All' : 'Select All';
+            }
+
+            const confirmBtn = document.getElementById('ledger-pay-confirm-btn');
+            if (confirmBtn) {
+                confirmBtn.disabled = checkedCbs.length === 0;
+                confirmBtn.classList.toggle('opacity-50', checkedCbs.length === 0);
+            }
+        };
+
+        document.querySelectorAll('.ledger-group-student-cb').forEach(cb => {
+            cb.addEventListener('change', updateGroupSelectionState);
+        });
+
+        if (toggleAllBtn) {
+            toggleAllBtn.onclick = () => {
+                const cbs = Array.from(document.querySelectorAll('.ledger-group-student-cb'));
+                const allChecked = cbs.every(cb => cb.checked);
+                cbs.forEach(cb => { cb.checked = !allChecked; });
+                updateGroupSelectionState();
+            };
+        }
+    } else {
+        if (scopeWrap) scopeWrap.classList.add('hidden');
+    }
+
+    // Receipt requirement indicator (Mandatory with red star vs Optional)
+    const isReceiptMandatory = Boolean(window.defaultReceiptMandatory);
+    const receiptReqStar = document.getElementById('ledger-pay-receipt-req');
+    const receiptBadge = document.getElementById('ledger-pay-receipt-badge');
+
+    if (receiptReqStar) {
+        receiptReqStar.classList.toggle('hidden', !isReceiptMandatory);
+    }
+    if (receiptBadge) {
+        if (isReceiptMandatory) {
+            receiptBadge.textContent = '(Mandatory)';
+            receiptBadge.className = 'text-[9px] font-bold text-rose-600';
+        } else {
+            receiptBadge.textContent = '(Optional)';
+            receiptBadge.className = 'text-[9px] font-normal text-slate-400';
+        }
     }
 
     // Amount, Receipt, Date, Mode
@@ -185,7 +290,7 @@ export const openFeeEntryEditModal = (options = {}) => {
 
     const nextReceipt = isEdit
         ? (existingPayment?.receiptNo || '')
-        : getGlobalNextReceiptNumber();
+        : (isReceiptMandatory ? getGlobalNextReceiptNumber() : (options.receiptNo || ''));
 
     const paymentDateVal = isEdit
         ? (existingPayment?.paymentDate || new Date().toISOString().split('T')[0])
@@ -305,10 +410,26 @@ export const submitFeeEntryPayment = async () => {
     const isEdit = source === 'edit' || Boolean(existingPaymentId);
     const receiptRaw = document.getElementById('ledger-pay-receipt')?.value?.trim() || '';
     let receiptNo = receiptRaw ? parseInt(receiptRaw, 10) : '';
-    if (!isEdit && (!receiptNo || isNaN(receiptNo))) {
-        receiptNo = getGlobalNextReceiptNumber();
-    } else if (isNaN(receiptNo)) {
-        receiptNo = '';
+
+    // Check mandatory receipt setting
+    const isReceiptMandatory = Boolean(window.defaultReceiptMandatory);
+    if (isReceiptMandatory) {
+        if (!receiptRaw || isNaN(receiptNo) || receiptNo <= 0) {
+            showToast('Receipt number is mandatory. Please enter a receipt number.', 'error');
+            const rcptInput = document.getElementById('ledger-pay-receipt');
+            if (rcptInput) {
+                rcptInput.focus();
+                rcptInput.classList.add('ring-2', 'ring-rose-500');
+                setTimeout(() => rcptInput.classList.remove('ring-2', 'ring-rose-500'), 1500);
+            }
+            return;
+        }
+    } else {
+        if (!isEdit && (!receiptNo || isNaN(receiptNo))) {
+            receiptNo = getGlobalNextReceiptNumber();
+        } else if (isNaN(receiptNo)) {
+            receiptNo = '';
+        }
     }
 
     const paymentDate = document.getElementById('ledger-pay-date')?.value || new Date().toISOString().split('T')[0];
@@ -318,13 +439,6 @@ export const submitFeeEntryPayment = async () => {
     if (!amount || amount <= 0) {
         showToast('Please enter a valid payment amount.', 'error');
         if (amountInput) amountInput.focus();
-        return;
-    }
-
-    // Check mandatory receipt setting
-    const isReceiptMandatory = Boolean(window.defaultReceiptMandatory);
-    if (isReceiptMandatory && (!receiptNo || isNaN(receiptNo))) {
-        showToast('Receipt number is required by institution configuration.', 'error');
         return;
     }
 
@@ -375,25 +489,65 @@ export const submitFeeEntryPayment = async () => {
                 ...updatePayload
             };
         } else {
-            // NEW PAYMENT ENTRY
-            const groupScopeVal = document.querySelector('input[name="ledger-group-pay-type"]:checked')?.value || 'group';
+            // NEW PAYMENT ENTRY (Supports selecting individual child or all children from group)
             const unit = activeModalOptions?.unit || null;
-            const isGroup = Boolean(unit?.isGroup && groupScopeVal === 'group');
+            const checkedStudentCbs = unit?.isGroup ? Array.from(document.querySelectorAll('.ledger-group-student-cb:checked')) : [];
+            const isGroup = Boolean(unit?.isGroup);
+
+            if (isGroup && checkedStudentCbs.length === 0) {
+                showToast('Please select at least one student from the group.', 'error');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Record Payment';
+                }
+                isSubmitting = false;
+                return;
+            }
 
             const payRef = doc(collection(db, `${BASE_PATH}/payments`));
             const newTxnId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
 
+            let effectiveStudentId = studentId;
+            let effectiveStudentName = studentName;
+            let effectiveStudentClass = studentClass;
+            let effectiveStudentAdm = studentAdm;
+            let effectiveItemName = itemName;
+            let billingGroupId = null;
+
+            if (isGroup) {
+                if (checkedStudentCbs.length === 1) {
+                    // Single child selected from group
+                    const singleCb = checkedStudentCbs[0];
+                    effectiveStudentId = singleCb.dataset.studentId || studentId;
+                    effectiveStudentName = singleCb.dataset.studentName || studentName;
+                    effectiveStudentClass = singleCb.dataset.studentClass || studentClass;
+                    effectiveStudentAdm = singleCb.dataset.studentAdm || studentAdm;
+                    effectiveItemName = `${month} Tuition Fee`;
+                    billingGroupId = unit.groupId || null;
+                } else {
+                    // Multiple or all children selected
+                    billingGroupId = unit.groupId || null;
+                    effectiveStudentName = checkedStudentCbs.map(cb => cb.dataset.studentName).join(', ');
+                    effectiveStudentClass = checkedStudentCbs.map(cb => cb.dataset.studentClass).join(', ');
+                    effectiveStudentId = checkedStudentCbs[0].dataset.studentId || studentId;
+                    effectiveStudentAdm = checkedStudentCbs.map(cb => cb.dataset.studentAdm).filter(Boolean).join(', ');
+                    effectiveItemName = checkedStudentCbs.length === unit.students.length
+                        ? `${month} Tuition Fee (Family Group)`
+                        : `${month} Tuition Fee (${checkedStudentCbs.length} Students)`;
+                }
+            }
+
             let paymentPayload = {
-                studentId: studentId,
-                studentName: studentName,
-                studentClass: studentClass,
-                classLabel: studentClass,
-                studentAdm: studentAdm,
+                studentId: effectiveStudentId,
+                studentName: effectiveStudentName,
+                studentClass: effectiveStudentClass,
+                classLabel: effectiveStudentClass,
+                studentAdm: effectiveStudentAdm,
                 guardianName: unit?.guardian || document.getElementById('ledger-pay-guardian')?.textContent || '',
                 amount: amount,
                 receiptNo: receiptNo || '',
                 itemKey: itemKey,
-                itemName: itemName,
+                itemName: effectiveItemName,
                 itemType: 'month',
                 paymentMode: mode,
                 paymentDate: paymentDate,
@@ -404,11 +558,8 @@ export const submitFeeEntryPayment = async () => {
                 status: 'FULL'
             };
 
-            if (isGroup && unit) {
-                paymentPayload.billingGroupId = unit.groupId;
-                paymentPayload.studentName = unit.students.map(s => s.name).join(', ');
-                paymentPayload.studentClass = unit.classes.join(', ');
-                paymentPayload.itemName = `${month} Tuition Fee (Family Group)`;
+            if (billingGroupId) {
+                paymentPayload.billingGroupId = billingGroupId;
             }
 
             batch.set(payRef, paymentPayload);

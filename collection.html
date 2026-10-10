@@ -262,9 +262,20 @@
                     
                     <div class="mt-5"><label class="block text-sm font-semibold mb-1 text-gray-700">Description (Optional)</label><textarea id="entry-description" rows="2" class="w-full p-2.5 rounded-lg"></textarea></div>
                     <div class="mt-6 pt-5 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div class="w-full sm:w-auto">
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Total Amount (₹)</label>
-                            <input type="number" id="total-amount" class="p-2.5 w-full sm:w-32 font-mono text-xl font-bold text-green-700 bg-green-50 border border-green-300 rounded-lg text-center focus:ring-2 focus:ring-green-400 focus:outline-none" value="0">
+                        <div class="w-full sm:w-auto flex flex-wrap items-center gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Total Amount (₹)</label>
+                                <input type="number" id="total-amount" class="p-2.5 w-full sm:w-32 font-mono text-xl font-bold text-green-700 bg-green-50 border border-green-300 rounded-lg text-center focus:ring-2 focus:ring-green-400 focus:outline-none" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Payment Mode</label>
+                                <select id="entry-payment-mode" class="p-2.5 w-full sm:w-48 font-semibold text-slate-800 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none text-sm">
+                                    <option value="Cash" selected>Cash</option>
+                                    <option value="UPI / GPay / PhonePe">UPI / GPay / PhonePe</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
                         </div>
                         <div id="action-buttons-container" class="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                             <button id="cancel-edit-btn" class="bg-gray-200 text-gray-800 font-bold py-2.5 px-6 rounded-lg shadow-sm hover:bg-gray-300 transition hidden flex-grow sm:flex-grow-0">Cancel</button>
@@ -712,10 +723,19 @@
                     </div>
                 </div>
 
-                <div id="ledger-pay-group-scope-wrap" class="hidden bg-amber-50/70 p-2 rounded-xl border border-amber-200 text-amber-900 font-semibold text-[11px] space-y-1">
-                    <div class="text-[10px] uppercase font-bold text-amber-800">Group Billing Scope</div>
-                    <label class="flex items-center gap-1.5 cursor-pointer text-slate-800"><input type="radio" name="ledger-group-pay-type" value="group" checked> <span>Record for Entire Family Group</span></label>
-                    <label class="flex items-center gap-1.5 cursor-pointer text-slate-800"><input type="radio" name="ledger-group-pay-type" value="single"> <span>Record for Selected Student Only</span></label>
+                <div id="ledger-pay-group-scope-wrap" class="hidden bg-amber-50/70 p-2.5 rounded-xl border border-amber-200 text-slate-800 text-[11px] space-y-2">
+                    <div class="flex items-center justify-between pb-1 border-b border-amber-200/60">
+                        <span class="text-[10px] uppercase font-bold text-amber-900 flex items-center gap-1.5">
+                            <i class="fas fa-users text-amber-700"></i> Family Group Students
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span id="ledger-group-selected-count" class="text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded">All Selected</span>
+                            <button type="button" id="ledger-group-toggle-all-btn" class="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline">Deselect All</button>
+                        </div>
+                    </div>
+                    <div id="ledger-pay-group-students-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                        <!-- Dynamic vertical list of students with checkboxes -->
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -725,8 +745,8 @@
                     </div>
                     <div>
                         <label class="block font-bold text-slate-600 mb-1 text-[11px] flex items-center justify-between">
-                            <span>Receipt No <span id="ledger-pay-receipt-req" class="text-red-500 font-bold hidden">*</span></span>
-                            <span class="text-[9px] text-slate-400 font-normal">(Auto)</span>
+                            <span>Receipt No <span id="ledger-pay-receipt-req" class="text-rose-600 font-bold hidden">*</span></span>
+                            <span id="ledger-pay-receipt-badge" class="text-[9px] text-slate-400 font-normal">--</span>
                         </label>
                         <input type="number" id="ledger-pay-receipt" class="form-input text-xs font-mono font-bold" placeholder="Receipt No">
                     </div>
@@ -737,8 +757,9 @@
                         <label class="block font-bold text-slate-600 mb-1 text-[11px]">Payment Mode</label>
                         <select id="ledger-pay-mode" class="form-input text-xs font-bold">
                             <option value="Cash">Cash</option>
-                            <option value="GPay / PhonePe">GPay / PhonePe</option>
+                            <option value="UPI / GPay / PhonePe">UPI / GPay / PhonePe</option>
                             <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
                         </select>
                     </div>
                     <div>

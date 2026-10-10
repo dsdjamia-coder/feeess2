@@ -1949,6 +1949,8 @@ const setupFeeEntryUI = () => {
     document.getElementById('entry-receipt').value = getNextReceiptNoForStaff();
     document.getElementById('entry-description').value = '';
     document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+    const entryPayModeEl = document.getElementById('entry-payment-mode');
+    if (entryPayModeEl) entryPayModeEl.value = 'Cash';
     populateFeeItemSelection();
     multiEntryQueue = [];
     renderMultiEntryQueue();
@@ -1999,6 +2001,8 @@ const startEditingPayment = (studentId, txnId) => {
 
     document.getElementById('entry-receipt').value = grp[0].receiptNo || ''; document.getElementById('entry-date').value = grp[0].paymentDate;
     document.getElementById('entry-description').value = grp[0].description || ''; document.getElementById('total-amount').value = grp.reduce((s,p)=>s+p.amount, 0);
+    const modeEl = document.getElementById('entry-payment-mode');
+    if (modeEl) modeEl.value = grp[0].paymentMode || 'Cash';
 
     const groupedByStudent = grp.reduce((acc, payment) => {
         if (!acc[payment.studentId]) acc[payment.studentId] = [];
@@ -2102,6 +2106,7 @@ const processPaymentSubmit = async (isUpdate) => {
 
     const dt = document.getElementById('entry-date').value;
     const desc = document.getElementById('entry-description').value.trim();
+    const paymentMode = document.getElementById('entry-payment-mode')?.value || 'Cash';
     const visibleTotal = parseFloat(document.getElementById('total-amount').value || 0);
     const tot = isMultiEntryMode() ? allEntries.reduce((sum, e) => sum + Number(e.total || 0), 0) : visibleTotal;
     if(!dt || isNaN(tot)) return alert("Please check the date and amount.");
@@ -2126,8 +2131,8 @@ const processPaymentSubmit = async (isUpdate) => {
     }
 
     const amountLine = document.createElement('p');
-    amountLine.className = 'mt-2 text-sm text-gray-500 font-mono';
-    amountLine.textContent = `Total Amount: ₹${tot}`;
+    amountLine.className = 'mt-2 text-sm text-gray-700 font-mono flex items-center justify-between border-t border-b py-1.5 border-slate-100';
+    amountLine.innerHTML = `<span>Total Amount: <b>₹${tot}</b></span><span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold text-xs border border-blue-200">Mode: ${escapeHtml(paymentMode)}</span>`;
     const detailsWrap = document.createElement('div');
     detailsWrap.className = 'mt-2 text-xs text-slate-600 space-y-1 max-h-40 overflow-y-auto';
 
@@ -2191,6 +2196,7 @@ const processPaymentSubmit = async (isUpdate) => {
                     receiptNo: rcpt,
                     transactionId: tId,
                     paymentDate: dt,
+                    paymentMode: paymentMode,
                     timestamp: Date.now(),
                     description: desc,
                     collectedBy: getCollectorKey(),

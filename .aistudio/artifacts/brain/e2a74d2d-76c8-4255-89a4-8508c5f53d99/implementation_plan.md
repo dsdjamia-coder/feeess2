@@ -1,103 +1,116 @@
-# Fix Fee Recording and Security Rules for Fee Status & Master Fee Ledger
+# Group Student Selection, Receipt Requirement UI, and Payment Mode Integration
 
-Resolve fee recording failure when adding fees through Fee Status and Master Fee Ledger by updating Firestore security rules to allow all active payment paths, relaxing timestamp validation for client updates, ensuring auto-generated receipt numbering, and improving batch persistence resilience.
+Enhance the Master Fee Ledger and Collection page with:
+1. **Vertical Student Selector for Family Groups**: In the shared fee modal, display a clean vertical list of individual students for family groups, all checked by default, allowing collectors to pay for the full group or select specific student(s) with dynamic automatic fee recalculation.
+2. **Mandatory vs. Optional Receipt Numbering**: Display a red asterisk `*` and `(Mandatory)` label when receipt numbers are enforced by institution settings, strictly blocking submission without a receipt; display `(Optional)` when optional.
+3. **Payment Mode in Fee Entry Tab**: Add a Payment Mode dropdown (Cash default, UPI, Bank Transfer, Cheque) directly adjacent to the Total Amount field in the main Entry tab (`#home`).
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The root cause of fee recording failure is a security rule violation: client code writes to three paths in a single atomic batch (`/payments`, `/academicYears/{yearId}/payments`, and `/years/{yearId}/payments`), but Firestore rules only allowed the first two. Because batch commits are atomic, any rejected write fails the entire transaction.
-
-- **Confirmed Decision 1 (Storage Paths)**: Allow payment creation, updates, and deletes in all legacy and current Firestore paths (`/institutions/{institutionId}/payments`, `/institutions/{institutionId}/academicYears/{yearId}/payments`, and `/institutions/{institutionId}/years/{yearId}/payments`).
-- **Confirmed Decision 2 (Receipt Numbering)**: Auto-generate the next sequential receipt number automatically in the Quick Fee Modal if not explicitly specified by the collector.
-- **Confirmed Decision 3 (Timestamp Validation)**: Permit `updatedAt` to be either a Firestore timestamp or an ISO 8601 string in `validPaymentWrite()` helper so client-side date strings do not trigger rule rejections.
+> - **Confirmed Decision 1 (Fee Calculation)**: When individual students are checked/unchecked in a family group, the fee amount will dynamically recalculate based on the per-student fee rates.
+> - **Confirmed Decision 2 (Payment Mode Choices)**: The Entry tab Payment Mode selector will support `Cash` (default), `UPI / GPay / PhonePe`, `Bank Transfer`, and `Cheque`.
+> - **Confirmed Decision 3 (Receipt Enforcement)**: When receipt numbering is mandatory in settings, the red asterisk will appear and submission will be blocked until a valid receipt is entered. When optional, it will display `(Optional)`.
 
 ---
 
 ### 1. Overview & Core Concept
 
-- **What It Does**: Enables madrasa fee collectors to record and edit student tuition fees smoothly from both the **Fee Status** grid and the **Master Fee Ledger** spreadsheet table without encountering "Missing or insufficient permissions" errors.
-- **Target Audience**: Madrasa administrative staff, teachers, and fee collectors managing student monthly collections.
-- **Key Value**: Immediate, zero-friction fee collection with real-time UI cell updates, valid receipt tracking, and synchronized database storage.
+- **What It Does**:
+  - In **Master Fee Ledger**, clicking an unpaid month cell for a sibling/family group opens the fee modal showing all children listed vertically with checkboxes (checked by default). The collector can keep all selected or check only the specific child (e.g. paying for one sibling this week and the other next week). The fee amount automatically recalculates based on selection.
+  - The receipt input dynamically indicates whether receipt numbers are `(Mandatory)` with a red star `*` or `(Optional)`.
+  - In the **Fee Entry Tab** (`#home`), a dedicated Payment Mode dropdown next to Total Amount allows specifying payment method (Cash, UPI, Bank Transfer, Cheque), persisting it across transactions.
 
 ---
 
 ### 2. User Experience & Visual Design
 
-- **Fee Status Flow**:
-  1. Collector navigates to **Fee Status** tab in `collection.html`.
-  2. Clicks on an unpaid month cell (marked with red exclamation badge).
-  3. Shared Fee Modal opens pre-filled with student name, admission number, month, default fee amount, and the next sequential receipt number.
-  4. Collector clicks "Record Payment" (or presses Enter).
-  5. The modal closes, cell flashes emerald green with "Paid" badge and receipt number, toast notification confirms success, and data persists without error.
-- **Master Fee Ledger Flow**:
-  1. Collector opens **Master Fee Ledger** tab.
-  2. Clicks an unpaid month cell for an individual student or consolidated family sibling group.
-  3. Modal opens with group/student context and auto-generated receipt number.
-  4. Confirming updates the cell instantly in the edge-to-edge spreadsheet and syncs with Firestore.
-- **Edit Payment Flow**:
-  1. Collector clicks an already paid cell or clicks "Edit" from receipt viewer.
-  2. Modal opens in edit mode pre-populated with existing details.
-  3. Saving updates existing documents across all payment paths seamlessly.
+#### A. Master Fee Ledger Group Student Selection (Modal)
+- Replaces static radio buttons with an interactive vertical list of student cards:
+  - Each item: Checkbox + Student Name + Class Badge + Adm No + Student Fee (₹).
+  - "Select All" / "Deselect All" quick toggles.
+  - Live summary: e.g. "Selected: 2 of 3 students (₹400 total)".
+  - Dynamic amount sync: Changing selections updates `#ledger-pay-amount` instantly.
+  - Validation: At least one student must be checked; otherwise, submit button disables with helpful guidance.
+
+#### B. Dynamic Receipt Requirement UI
+- Modal inspects `window.defaultReceiptMandatory`.
+- If mandatory:
+  - Label: `Receipt No <span class="text-red-500 font-bold">*</span> <span class="text-rose-600 font-semibold text-[10px]">(Mandatory)</span>`
+  - Submitting without receipt triggers an inline validation alert and blocks saving.
+- If optional:
+  - Label: `Receipt No <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>`
+  - Submitting without receipt is permitted and auto-generates or leaves clean.
+
+#### C. Payment Mode in Entry Tab (`#home`)
+- Positioned alongside `Total Amount (₹)` in the action section:
+  ```
+  ┌───────────────────────┬───────────────────────────┬──────────────────────┐
+  │ Total Amount (₹)      │ Payment Mode              │ [ Save Fee Payment ] │
+  │ [   ₹400            ] │ [ Cash ▼                ] │                      │
+  └───────────────────────┴───────────────────────────┴──────────────────────┘
+  ```
+- Options:
+  - `Cash` (Default)
+  - `UPI / GPay / PhonePe`
+  - `Bank Transfer`
+  - `Cheque`
+- Integrated into confirmation popup and stored in Firestore payment documents (`paymentMode`).
 
 ---
 
 ### 3. Key Product Decisions & Trade-Offs
 
-- **Multi-Path Rules Support (`/years/` and `/academicYears/`)**:
-  - *Chosen Approach*: Explicitly define match rules for `/institutions/{institutionId}/years/{yearId}/payments/{docId}` mirroring `/academicYears/{yearId}/payments/{docId}`.
-  - *Why*: Eliminates batch transaction rejections without requiring breaking database migrations or breaking older collection sessions.
-- **Flexible `updatedAt` Validation**:
-  - *Chosen Approach*: Update `validPaymentWrite()` to check `(!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp || request.resource.data.updatedAt is string)`.
-  - *Why*: JavaScript client code routinely formats `updatedAt` as `new Date().toISOString()`. Supporting string types prevents unexpected permission denial.
-- **Defensive Error Handling**:
-  - *Chosen Approach*: Enhance `shared-fee-modal.js` to log detailed diagnostics and cleanly inform the user if any individual path fails.
+- **Dynamic Group Pay vs Individual Pay in Ledger**:
+  - *Chosen Approach*: When a single student is selected from a group, save the payment targeted specifically to that student (`studentId`, `studentName`, `studentClass`). When multiple are selected, save either as a consolidated group payment or split entries linked by `transactionId` and `billingGroupId`.
+  - *Why*: Allows flexible partial-family payments while keeping financial tracking and receipts accurate.
+- **Form Cohesion**:
+  - *Chosen Approach*: Put Payment Mode next to Total Amount in `#home` so collectors make amount and tender choices at the same decision step before saving.
 
 ---
 
 ### 4. Technical Architecture & Data Strategy
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   Collection Web UI                    │
-│   (Fee Status Grid / Master Fee Ledger Spreadsheet)    │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│             Shared Fee Modal & Controller              │
-│       (scripts/pages/collection/shared-fee-modal.js)   │
-│   - Next Receipt Generator                             │
-│   - Instant Cell DOM Update                            │
-│   - Firestore Atomic Batch Construction                │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│             Firestore Atomic Batch Commit              │
-│   Writes 1: /institutions/{id}/payments/{docId}        │
-│   Writes 2: /institutions/{id}/academicYears/{yr}/pay  │
-│   Writes 3: /institutions/{id}/years/{yr}/pay (Legacy) │
-└──────────────────────────┬─────────────────────────────┘
-                           │
-                           ▼
-┌────────────────────────────────────────────────────────┐
-│             Hardened Firestore Security Rules          │
-│                    (firestore.rules)                   │
-│   - Rule 1: Allow /payments writes                     │
-│   - Rule 2: Allow /academicYears/{yr}/payments writes  │
-│   - Rule 3: Allow /years/{yr}/payments writes (NEW)    │
-│   - Helper: validPaymentWrite() accepts string/time    │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Master Fee Ledger Group Pay Flow                      │
+│                                                                             │
+│  [Click Month Cell] ──► [openFeeEntryEditModal]                             │
+│                                │                                            │
+│                                ▼                                            │
+│                 Render Vertical Student Checkboxes                          │
+│                 [x] 1. Muhammed Fayis (Class 6) - ₹200                      │
+│                 [x] 2. Fatima Hiba   (Class 4) - ₹200                      │
+│                                │                                            │
+│                 Toggle ──► Recalculate #ledger-pay-amount                   │
+│                                │                                            │
+│  [Check Mandatory Setting] ──► Set Red Star (*) + Enforce Input             │
+└────────────────────────────────┬────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Entry Tab (#home) Flow                             │
+│                                                                             │
+│  [Total Amount: ₹400] + [Payment Mode: Cash ▼]                              │
+│                                │                                            │
+│                                ▼                                            │
+│  [processPaymentSubmit] ──► Include paymentMode in payload & batch write    │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 #### Files to Update:
-1. `firestore.rules`:
-   - Add rule block for `/institutions/{institutionId}/years/{yearId}/payments/{docId}`.
-   - Update `validPaymentWrite()` helper to allow string timestamps for `updatedAt`.
-   - Deploy rules to Firebase project via `deploy_firebase`.
+1. `collection.html`:
+   - Redesign `#ledger-pay-group-scope-wrap` into vertical student list container (`#ledger-pay-group-students-list`).
+   - Add `#entry-payment-mode` select in Entry tab alongside `#total-amount`.
+   - Update receipt label elements to support dynamic mandatory/optional badges.
 2. `scripts/pages/collection/shared-fee-modal.js`:
-   - Ensure `getGlobalNextReceiptNumber()` always computes a valid integer receipt.
-   - Ensure `updatedAt` uses standard compatible formatting.
-   - Guard batch operations with clear error messages.
-3. Verification:
-   - Run compilation and verify rules deployment.
+   - Render vertical students list with checkboxes when `unit.isGroup` is true.
+   - Attach change listeners on checkboxes to auto-recalculate total fee.
+   - Check `window.defaultReceiptMandatory` to update red star and `(Mandatory)`/`(Optional)` badge.
+   - Enforce receipt number validation when mandatory.
+   - Target selected students in `submitFeeEntryPayment`.
+3. `scripts/pages/collection-page.js`:
+   - Read `#entry-payment-mode` in `processPaymentSubmit`.
+   - Include `paymentMode` in payment payload.
+   - Display Payment Mode in payment confirmation modal.
+   - Sync `entry-payment-mode` when editing an existing payment.

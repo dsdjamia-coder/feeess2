@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for resolving payment recording failures in Fee Status and Master Fee Ledger by updating Firestore security rules to permit all payment paths (/payments, /academicYears/{yearId}/payments, /years/{yearId}/payments) and allow ISO-string timestamps, aligning receipt numbering, and hardening client-side batch persistence.",
-  "updatedAt":  "2026-10-10T10:01:01.765290579Z",
+  "summary":  "Implementation plan for: 1) Individual and multi-student vertical selection with dynamic fee calculation inside Master Fee Ledger group payment modal; 2) Dynamic mandatory/optional receipt numbering indicator with red star enforcement; 3) Payment Mode dropdown (Cash default, UPI, Bank Transfer, Cheque) in the Fee Entry tab alongside Total Amount.",
+  "updatedAt":  "2026-10-10T10:17:58.744327613Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
