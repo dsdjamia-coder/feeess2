@@ -236,6 +236,7 @@ const activateTab = (targetId, { updateHash = true } = {}) => {
 
 links.forEach(link => {
     link.addEventListener('click', (e) => {
+        if (!link.dataset.target) return;
         e.preventDefault();
         activateTab(link.dataset.target);
     });
@@ -264,6 +265,14 @@ document.getElementById('close-tab-settings-btn')?.addEventListener('click', () 
 
 // Navigation button actions
 document.getElementById('new-fee-entry-btn')?.addEventListener('click', () => { activateTab('home-page'); });
+document.getElementById('back-to-official-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.location.href = 'official.html';
+});
+document.getElementById('topbar-official-hub-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.location.href = 'official.html';
+});
 let isDonationSaveInFlight = false;
 let collectorPaymentDetails = {
     accountName: '',

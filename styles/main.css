@@ -1274,21 +1274,137 @@ body.student-shell #home-page > .id-card .id-value {
 .official-me-photo{width:154px;height:154px;border-radius:34px;object-fit:cover;border:5px solid rgba(255,255,255,.72);box-shadow:0 24px 45px rgba(15,23,42,.26)}
 .official-access-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);padding:7px 11px;color:#fff;font-size:12px;font-weight:900;backdrop-filter:blur(8px)}
 
-/* Collection PWA bottom navigation */
-.collection-bottom-nav{display:none}
-body.collection-shell.pwa-standalone{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
-body.collection-shell.pwa-standalone .collection-bottom-nav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:950;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;gap:5px;padding:8px 8px 10px;border:1px solid rgba(191,219,254,.9);border-radius:26px;background:rgba(255,255,255,.96);box-shadow:0 18px 42px rgba(15,23,42,.18);backdrop-filter:blur(18px)}
-.collection-bottom-nav-link{position:relative;min-width:0;min-height:58px;border:0;border-radius:18px;background:transparent;color:#64748b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:700;text-align:center;transition:all .2s ease}
-.collection-bottom-nav-link i{width:40px;height:40px;border-radius:14px;background:transparent;color:#64748b;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid transparent;transition:all .2s ease}
-.collection-bottom-nav-link span{line-height:1.05;white-space:nowrap;transition:color .2s ease}
-.collection-bottom-nav-link.active{background:transparent;color:#2563eb;font-weight:900}
-.collection-bottom-nav-link.active i{background:#2563eb !important;color:#ffffff !important;border:none !important;box-shadow:0 4px 12px rgba(37,99,235,0.35)}
-.collection-bottom-nav-link.active span{color:#2563eb;font-weight:900}
-.collection-bottom-nav-link-fee{min-height:78px;margin-top:-26px;transform:translateY(-8px);color:#64748b}
-.collection-bottom-nav-link-fee i{width:54px;height:54px;border:3px solid #ffffff;border-radius:20px;background:#64748b;color:#ffffff;font-size:22px;box-shadow:0 4px 14px rgba(15,23,42,0.15)}
-.collection-bottom-nav-link-fee.active{color:#2563eb}
-.collection-bottom-nav-link-fee.active i{background:#2563eb !important;color:#ffffff !important;border-color:#ffffff !important;box-shadow:0 8px 20px rgba(37,99,235,0.45)}
-@media (max-width: 640px){body.collection-shell.pwa-standalone .collection-bottom-nav{left:6px;right:6px;border-radius:22px}.collection-bottom-nav-link{font-size:9px}.collection-bottom-nav-link span{max-width:54px;overflow:hidden;text-overflow:ellipsis}}
+/* Collection Mobile and PWA bottom navigation */
+.collection-bottom-nav { display: none; }
+
+@media (max-width: 768px) {
+    body.collection-shell {
+        padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    .collection-bottom-nav {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        z-index: 950;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        align-items: center;
+        gap: 4px;
+        padding: 5px 6px 7px;
+        border: 1px solid rgba(203, 213, 225, 0.9);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
+        backdrop-filter: blur(16px);
+    }
+}
+
+body.collection-shell.pwa-standalone {
+    padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+}
+body.collection-shell.pwa-standalone .collection-bottom-nav {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    z-index: 950;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    gap: 4px;
+    padding: 5px 6px 7px;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(16px);
+}
+
+.collection-bottom-nav-link {
+    position: relative;
+    min-width: 0;
+    min-height: 48px;
+    border: 0;
+    border-radius: 14px;
+    background: transparent;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    transition: all 0.2s ease;
+    padding: 5px 3px;
+    text-decoration: none;
+}
+.collection-bottom-nav-link i {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: transparent !important;
+    color: #64748b !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+.collection-bottom-nav-link span {
+    line-height: 1.1;
+    white-space: nowrap;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+    transition: color 0.2s ease;
+}
+
+/* Active State: Clean solid blue background, pure white icon, pure white text */
+.collection-bottom-nav-link.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+.collection-bottom-nav-link.active i {
+    background: transparent !important;
+    color: #ffffff !important;
+}
+.collection-bottom-nav-link.active span {
+    color: #ffffff !important;
+    font-weight: 800;
+}
+
+/* Fee Entry Center Button Styling */
+.collection-bottom-nav-link-fee {
+    position: relative;
+}
+.collection-bottom-nav-link-fee.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+}
+.collection-bottom-nav-link-fee.active i {
+    background: transparent !important;
+    color: #ffffff !important;
+}
+.collection-bottom-nav-link-fee.active span {
+    color: #ffffff !important;
+}
+
+@media (max-width: 640px) {
+    .collection-bottom-nav-link {
+        font-size: 9px;
+    }
+    .collection-bottom-nav-link span {
+        max-width: 54px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
 
 /* Master Fee Ledger & Fee Status Full-Width & High-Density Styles */
 body.ledger-fullwidth main,
