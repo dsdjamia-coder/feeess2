@@ -1,95 +1,171 @@
-# Staff ID Card Profile Modal & Floating Hub Button Removal
+# Collection Page Menu, Mobile Bottom Nav & Universal Fee Receipt Enhancements
 
-Streamline Official Hub navigation and refine the Staff Profile modal into an authentic Vertical Badge ID Card:
-1. **Remove Floating Hub Switcher**: Eliminate the floating bottom-corner "Official Hub" button (`#hub-floating-switcher`) across `collection.html`, `admin.html`, and `result.html`.
-2. **Remove Profile from Welcome Banner**: Keep the Staff Profile trigger exclusively in the top header (`#official-my-profile-btn`), removing the duplicate button from the welcome banner in `official.html`.
-3. **Vertical Badge ID Card Design**: Redesign the Profile modal into an authentic vertical physical ID card badge (`max-w-sm` / `w-[360px]`) displaying institution header, staff photo (or clean blank frame if absent), bold staff name, designation, phone, email, and department access.
+A comprehensive architectural plan to remove "Result Management" from the Collection portal navigation, correct mobile bottom navigation active/inactive tab colors, unify receipt number mandatory handling and auto-incrementation across Fee Status and Master Fee Ledger, and ensure rock-solid sticky student and month headers for high-density financial tables.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> - **Confirmed Decision 1 (ID Card Layout)**: Vertical badge ID card format with institution header band, badge slot, staff portrait, clean typographic hierarchy, and credentials grid.
-> - **Confirmed Decision 2 (Highlighted Details)**: Staff photo, full name, designation/role, phone number, email address, staff key/ID, and department permissions.
-> - **Confirmed Decision 3 (Photo Handling)**: If a photo is uploaded, display it crisply with rounded frame; if no photo is available, keep the photo frame clean and blank (empty avatar silhouette/initials, without falling back to institution logo).
+> The following user preferences were gathered and aligned during Phase 1 clarification:
+>
+> - **Mobile Bottom Nav Inactive Styling**: Inactive tabs render with quiet gray icon (`#64748b`) and label on transparent background, while the active tab displays a solid blue container (`#2563eb`) with an interior white icon (`#ffffff`) and bold blue text.
+> - **Sticky Table Headers & Student Columns**: In both the Master Fee Ledger and Fee Status tables, student identifiers and names remain pinned on the left (`sticky left-*`) and academic months/fee items remain pinned at the top (`sticky top-0`) during horizontal and vertical scrolling.
+
+- **Confirmed Decision 1**: Remove the redundant "Result Management" navigation item from the Collection portal sidebar/mobile menu.
+- **Confirmed Decision 2**: Mobile bottom navigation active button icon is crisp white inside a solid blue container (`#2563eb`), correcting the previously inverted/overflowing blue border styling.
+- **Confirmed Decision 3**: Synchronize `defaultReceiptMandatory` and fee-specific mandatory rules into the Universal Fee Payment Modal (`#master-ledger-pay-modal`) across Fee Status and Master Fee Ledger, displaying red asterisk `*` and required validation when mandatory, while auto-filling the next receipt number (`last receipt + 1`) by default in both mandatory and optional modes.
+- **Confirmed Decision 4**: Fix table layout constraints in Master Fee Ledger and Fee Status by removing nested `overflow-hidden` on `<table>`, standardizing pixel-based sticky left offsets, and elevating corner intersection cells to `z-30`.
 
 ---
 
-### 1. Overview & Core Concept
+## 1. Overview & Core Concept
 
 - **What It Does**:
-  - Cleans up the UI on Collection, Admin, and Result portals by removing the persistent bottom-right floating switcher button.
-  - In `official.html`, eliminates the redundant "Staff Profile" button inside the welcome hero, making the header account button the single, unified profile entry point.
-  - Clicking "Staff Profile" in the header presents a compact, elegant Vertical ID Card modal instead of a generic wide stretched-out dialog.
+  1. **Menu Streamlining**: Removes "Result Management" link from `collection.html` navigation menu and avoids unnecessary navigation clutter.
+  2. **Mobile Bottom Navigation Restyling**: Fixes the bottom quick navigation bar on mobile devices so the active tab displays a solid blue icon container with a crisp white icon and blue label, while inactive tabs stay clean and transparent with neutral gray icons and text.
+  3. **Universal Receipt Mandatory & Auto-Numbering**: Fixes receipt number auto-generation in the Universal Fee Payment Modal used by both Fee Status and Master Fee Ledger. Automatically generates `last payment receipt number + 1` for seamless quick entries, while strictly enforcing mandatory receipt validation with a red asterisk `*` whenever the institution settings or custom fees require it.
+  4. **Fixed / Sticky Student Column & Month Header Layout**: Establishes robust sticky positions for student name columns on the left and academic month headers on top in both the Master Fee Ledger and Fee Status tables, allowing staff to navigate large student lists and 12-month records without losing student or month context.
+
+- **Target Audience / Persona**: Fee collectors, accounts clerks, and institutional administrators managing daily collections and auditing fee statuses on both desktop monitors and mobile devices.
+
+- **Key Value**: Eliminates data entry confusion, prevents missing receipt numbers when mandatory, speeds up receipt recording by auto-incrementing numbers, and delivers spreadsheet ergonomics with frozen headers and columns.
 
 ---
 
-### 2. User Experience & Visual Design
+## 2. User Experience & Visual Design
 
-#### A. Floating Switcher Cleanup
-- `scripts/shared/hub-navigation.js`: Remove `#hub-floating-switcher` creation entirely. Top-bar navigation back to Official Hub remains cleanly in the header where appropriate.
-
-#### B. Official Welcome Section
-- The Welcome Hero retains:
-  - Institution badge
-  - Welcome greeting: `"Welcome, [Staff Name]"`
-  - Role description
-- The duplicate `"Staff Profile"` button is removed, leaving a clean, uncluttered banner.
-
-#### C. Vertical Badge ID Card Modal
-- **Container**: `max-w-sm w-full mx-auto rounded-3xl overflow-hidden shadow-2xl bg-white border border-slate-200`
-- **Visual Anatomy**:
-  - **Lanyard Slot / Clip Bar**: Realistic badge slot cutout at the top.
-  - **Header Band**: Institution primary color gradient with Institution Logo, Name, and Reg No.
-  - **Portrait Photo**:
-    - With photo: Crisp `w-28 h-28` rounded-2xl object-cover with subtle border and shadow.
-    - Without photo: Clean blank avatar silhouette with initials (no institution logo fallback).
-  - **Identity Block**:
-    - Full Name in high-contrast bold typography (`text-xl font-black text-slate-900`).
-    - Role / Designation pill (e.g. `Teacher`, `Administrator`, `Treasurer`).
-  - **Credentials Grid**:
-    - Phone / Mobile
-    - Email address
-    - Assigned Classes / Duty Details (if applicable)
-    - Authorized Department Permissions (Fee Collection, Result, Admin)
-  - **Card Footer**: Institution signature bar and Close button.
-
----
-
-### 3. Key Product Decisions & Trade-Offs
-
-- **Dedicated ID Card Modal vs. Reusing Generic Detail Modal**:
-  - *Chosen Approach*: Replace the stretched `official-detail-dialog` implementation for profile with a dedicated compact ID card dialog (`id-badge-modal`) constrained to `max-w-sm` on both mobile and desktop.
-  - *Why*: Prevents horizontal stretching and provides an authentic, printable ID card experience on any screen size.
-- **Photo Fallback Fix**:
-  - *Chosen Approach*: When a staff member does not have a photo, render a clean blank silhouette placeholder instead of `onerror="this.src='logo.png'"`, ensuring accuracy according to user requirements.
-
----
-
-### 4. Technical Architecture & Data Strategy
+### A. Navigation & Mobile Quick Bar
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    scripts/shared/hub-navigation.js         │
-│   - Remove #hub-floating-switcher creation                  │
-│   - Retain optional topbar nav link safely                  │
-└─────────────────────────────────────────────────────────────┘
+Mobile Bottom Navigation Bar Layout:
 
 ┌─────────────────────────────────────────────────────────────┐
-│              scripts/pages/official-shared-bootstrap.js     │
-│   1. Welcome Banner: Remove #hub-profile-quick button       │
-│   2. openMyProfileModal(): Render Vertical Badge ID Card    │
-│      - Institution Header + Logo                            │
-│      - Crisp Photo OR Clean Blank Silhouette Frame          │
-│      - Name, Designation, Phone, Email, Access Badges       │
+│  [Dashboard]    [History]     [Fee Entry]    [Monthly]  [Students] │
+│      ( )           ( )          ┌─────┐        ( )        ( )      │
+│     Gray          Gray          │White│       Gray       Gray      │
+│     Icon          Icon          │Icon │       Icon       Icon      │
+│                                 └─────┘                            │
+│                                  Solid                             │
+│                                  Blue                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### Files to Update:
-1. `scripts/shared/hub-navigation.js`:
-   - Remove floating quick-switcher code.
-2. `scripts/pages/official-shared-bootstrap.js`:
-   - Remove `#hub-profile-quick` from dashboard welcome banner.
-   - Refactor `openMyProfileModal()` to format profile as a Vertical Badge ID Card.
-   - Update `openOfficialDetailModal` styling or create dedicated card dialog container.
-3. Verification:
-   - Run regression gate and applet compilation to verify.
+- **Active Tab**:
+  - Icon container: Solid vibrant blue (`bg-blue-600` / `#2563eb`) with rounded geometry.
+  - Interior icon: Crisp white (`#ffffff`).
+  - Label text: Deep blue (`text-blue-700` / `#1d4ed8`), font-black, high contrast.
+- **Inactive Tabs**:
+  - Icon container: Transparent background, subtle neutral gray border or no border.
+  - Interior icon: Muted slate gray (`#64748b`).
+  - Label text: Medium slate gray (`#64748b`).
+
+### B. Universal Fee Payment Modal Receipt Logic
+
+```
+Receipt Number Field in Quick Pay Modal:
+
+[When Mandatory]
+Receipt No * (Mandatory)  [Red asterisk, red badge]
+[ 1042                          ]  <-- Auto-filled (last receipt + 1)
+Validation: Cannot submit if empty (shows toast & red ring)
+
+[When Optional]
+Receipt No   (Optional)   [Muted gray badge]
+[ 1042                          ]  <-- Auto-filled (last receipt + 1)
+Validation: Can be cleared or saved without blocking
+```
+
+### C. Sticky Spreadsheet Layout (Master Ledger & Fee Status)
+
+```
+┌─────────┬─────────┬──────────────────┬────────┬────────┬────────┐
+│ NO (Fix)│CLASS(Fix│STUDENT NAME (Fix)│ GUARDI │  JUN   │  JUL   │  <-- Sticky Top (z-30)
+├─────────┼─────────┼──────────────────┼────────┼────────┼────────┤
+│    1    │  10-A   │ MUHAMMED FARIS   │ Parent │  ₹200  │  ₹200  │
+│    2    │  10-A   │ AISHA MARVA      │ Parent │  ₹200  │  Paid  │
+│    3    │  10-B   │ BILAL AHMED      │ Parent │  Paid  │  ₹200  │
+└─────────┴─────────┴──────────────────┴────────┴────────┴────────┘
+     ▲         ▲             ▲                      ▲
+     └─────────┴─────────────┴──────────────────────┴─ Scrollable Right
+       Sticky Left (z-20)
+```
+
+- Corner Header Intersection (`z-30`): Remains fixed both horizontally and vertically.
+- Month Header Row (`z-20`, `sticky top-0`): Stays visible as user scrolls down.
+- Student Identifiers (`z-20`, `sticky left-*`): Stays visible as user scrolls horizontally across 12 academic months.
+- Clean high-contrast row zebra striping (`bg-white` / `bg-slate-50/50`) to prevent transparent content bleeding when scrolling.
+
+---
+
+## 3. Key Product Decisions & Trade-Offs
+
+- **Decision 1: Expose Configuration Flags to Global State**
+  - *Chosen Approach*: Expose `window.defaultReceiptMandatory`, `window.feeItems`, and `window.allPayments` reliably on the client runtime so `shared-fee-modal.js` and `master-ledger-module.js` share the exact same configuration truth as `collection-page.js`.
+  - *Why*: Previously, `defaultReceiptMandatory` was only a local closure variable in `collection-page.js`, leading `shared-fee-modal.js` to read `undefined` and disable mandatory validation.
+  - *Alternatives Considered*: Re-fetching settings directly from Firestore in the modal on every click. Rejected because local state is already live and cached via `onSnapshot`.
+
+- **Decision 2: Next Receipt Auto-Generation Behavior**
+  - *Chosen Approach*: Pre-fill `nextReceipt` with the collector's last receipt + 1 (or institution-wide max receipt + 1 if no collector receipts exist) in both mandatory and optional modes.
+  - *Why*: Reduces repetitive typing for collectors in busy fee collection counters while preserving full editability.
+
+- **Decision 3: Sticky Table Layout Architecture**
+  - *Chosen Approach*: Replace brittle Tailwind arbitrary classes like `z-35` with standard Tailwind classes and dedicated CSS rules in `styles/main.css`. Remove `overflow-hidden` on `<table>` elements that disable standard CSS `position: sticky`.
+  - *Why*: Nested `overflow-hidden` blocks `position: sticky` across modern browser rendering engines.
+
+---
+
+## 4. Technical Architecture & Data Strategy
+
+### System Component & Data Flow Diagram
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        COLLECTION PORTAL                               │
+├──────────────────────────┬─────────────────────────────────────────────┤
+│   Sidebar & Mobile Nav   │  1. Remove #result-nav-item                 │
+│                          │  2. Style .collection-bottom-nav-link       │
+│                          │     - Active: bg-blue-600 icon, text-white  │
+│                          │     - Inactive: transparent, text-slate-500 │
+├──────────────────────────┼─────────────────────────────────────────────┤
+│  Data Sync & Settings    │  Expose window.defaultReceiptMandatory      │
+│                          │  Expose window.feeItems, window.allPayments │
+├──────────────────────────┼─────────────────────────────────────────────┤
+│  Universal Fee Modal     │  openFeeEntryEditModal()                    │
+│  (shared-fee-modal.js)   │  - Evaluates mandatory rules                │
+│                          │  - Computes nextReceipt = max(receipts) + 1 │
+│                          │  - Displays * and red badge if mandatory    │
+│                          │  - Enforces input requirement before write  │
+├──────────────────────────┼─────────────────────────────────────────────┤
+│  Sticky Table Rendering  │  Fee Status & Master Fee Ledger             │
+│                          │  - thead: sticky top-0, z-20                │
+│                          │  - left cols: sticky left-*, z-10 / z-20    │
+│                          │  - corner headers: sticky left-*, z-30      │
+└──────────────────────────┴─────────────────────────────────────────────┘
+```
+
+### File Mutation Strategy
+
+1. **`collection.html`**:
+   - Remove `<li id="result-nav-item">` from the primary navigation menu.
+   - Update `#master-ledger-table-container` and `#fee-table-container` classes if necessary.
+
+2. **`styles/main.css`**:
+   - Update `.collection-bottom-nav-link` and `.collection-bottom-nav-link-fee`:
+     - Inactive: transparent background, gray icon (`#64748b`), gray label.
+     - Active: icon container gets solid blue background (`#2563eb`), white icon (`#ffffff`), and bold blue text.
+     - Ensure `.collection-bottom-nav` displays on mobile viewport screens (`@media (max-width: 768px)`).
+   - Add robust CSS rules for `#master-ledger-page` and `#fee-page` sticky headers (`top-0`, `z-20`) and sticky columns (`left-0`, `left-12`, `left-28`, `z-10`, `z-30`).
+
+3. **`scripts/pages/collection-page.js`**:
+   - Remove references to `result-nav-item` if any exist.
+   - Synchronize `window.defaultReceiptMandatory = defaultReceiptMandatory;` and `window.feeItems = feeItems;` on Firestore settings update.
+   - Ensure `renderFeeTable` uses proper sticky classes without breaking horizontal scrolling.
+
+4. **`scripts/pages/collection/shared-fee-modal.js`**:
+   - Detect mandatory receipt rules from `window.defaultReceiptMandatory` and `feeItems` correctly.
+   - Always auto-fill `getGlobalNextReceiptNumber()` for new fee payments in both mandatory and optional modes.
+   - Show red asterisk `*` and `(Mandatory)` badge when mandatory; show `(Optional)` badge without star when optional.
+   - Enforce mandatory validation on submit with toast and input highlight.
+
+5. **`scripts/pages/collection/master-ledger-module.js`**:
+   - Remove `overflow-hidden` on `<table>`.
+   - Use standard z-index classes (`z-30` for corner headers, `z-20` for sticky headers, `z-10` for sticky student body cells).

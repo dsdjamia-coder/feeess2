@@ -310,8 +310,8 @@ const renderLedgerTable = () => {
     }
 
     let html = `
-        <table class="min-w-full text-xs text-left border-collapse border border-slate-200 bg-white shadow-sm rounded-xl overflow-hidden">
-            <thead class="bg-slate-50 text-[11px] font-black text-slate-700 uppercase tracking-wider border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <table class="min-w-full text-xs text-left border-collapse border border-slate-200 bg-white shadow-sm master-ledger-sticky-table">
+            <thead class="bg-slate-50 text-[11px] font-black text-slate-700 uppercase tracking-wider border-b border-slate-200 sticky top-0 z-30 shadow-xs">
                 <tr>
                     <th class="px-2.5 py-3.5 text-center border-r border-slate-200 w-12 sticky left-0 bg-slate-50 z-35">NO</th>
                     <th class="px-2.5 py-3.5 text-center border-r border-slate-200 w-16 sticky left-12 bg-slate-50 z-35">CLASS</th>

@@ -13,10 +13,18 @@ import { collection, doc, writeBatch, getDoc, getDocs, query, where } from "http
 let activeModalOptions = null;
 let isSubmitting = false;
 
-// Compute next receipt number across all available payments
+// Compute next receipt number across all available payments (consistent with Staff and Global)
 export const getGlobalNextReceiptNumber = () => {
     let maxRcpt = 0;
     const candidates = [];
+
+    // Check staff-specific next receipt first if function exists
+    if (typeof window.getNextReceiptNoForStaff === 'function') {
+        const staffNext = window.getNextReceiptNoForStaff();
+        if (staffNext && !isNaN(Number(staffNext)) && Number(staffNext) > 0) {
+            return Number(staffNext);
+        }
+    }
 
     if (Array.isArray(window.allPayments)) {
         candidates.push(...window.allPayments);
@@ -33,7 +41,19 @@ export const getGlobalNextReceiptNumber = () => {
         }
     });
 
-    return maxRcpt + 1;
+    return maxRcpt > 0 ? maxRcpt + 1 : 1;
+};
+
+// Check if receipt is mandatory for this specific fee item or by default setting
+export const checkIsReceiptMandatoryForItem = (itemKey = '', itemType = '') => {
+    if (Array.isArray(window.feeItems) && window.feeItems.length > 0) {
+        const lowerKey = String(itemKey || '').toLowerCase();
+        const customItem = window.feeItems.find(i => String(i.key || '').toLowerCase() === lowerKey || String(i.name || '').toLowerCase() === lowerKey);
+        if (customItem && customItem.isReceiptMandatory !== undefined) {
+            return Boolean(customItem.isReceiptMandatory);
+        }
+    }
+    return Boolean(window.defaultReceiptMandatory);
 };
 
 /**
@@ -266,7 +286,7 @@ export const openFeeEntryEditModal = (options = {}) => {
     }
 
     // Receipt requirement indicator (Mandatory with red star vs Optional)
-    const isReceiptMandatory = Boolean(window.defaultReceiptMandatory);
+    const isReceiptMandatory = checkIsReceiptMandatoryForItem(targetItemKey, options.itemType);
     const receiptReqStar = document.getElementById('ledger-pay-receipt-req');
     const receiptBadge = document.getElementById('ledger-pay-receipt-badge');
 
@@ -288,9 +308,10 @@ export const openFeeEntryEditModal = (options = {}) => {
         ? (existingPayment?.amount || 0)
         : (options.defaultAmount || unit?.fee || 200);
 
+    const calculatedNextReceipt = getGlobalNextReceiptNumber();
     const nextReceipt = isEdit
         ? (existingPayment?.receiptNo || '')
-        : (isReceiptMandatory ? getGlobalNextReceiptNumber() : (options.receiptNo || ''));
+        : (options.receiptNo || calculatedNextReceipt || '');
 
     const paymentDateVal = isEdit
         ? (existingPayment?.paymentDate || new Date().toISOString().split('T')[0])
@@ -411,8 +432,8 @@ export const submitFeeEntryPayment = async () => {
     const receiptRaw = document.getElementById('ledger-pay-receipt')?.value?.trim() || '';
     let receiptNo = receiptRaw ? parseInt(receiptRaw, 10) : '';
 
-    // Check mandatory receipt setting
-    const isReceiptMandatory = Boolean(window.defaultReceiptMandatory);
+    // Check mandatory receipt setting (item-level or global default)
+    const isReceiptMandatory = checkIsReceiptMandatoryForItem(itemKey);
     if (isReceiptMandatory) {
         if (!receiptRaw || isNaN(receiptNo) || receiptNo <= 0) {
             showToast('Receipt number is mandatory. Please enter a receipt number.', 'error');

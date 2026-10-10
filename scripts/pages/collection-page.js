@@ -3773,6 +3773,13 @@ onAuthStateChanged(auth, async (user) => {
             feeItems = sortFeeItemsForDisplay(d.feeItems || []);
             defaultReceiptMandatory = d.defaultReceiptMandatory || false;
 
+            window.defaultFee = defaultFee;
+            window.feeItems = feeItems;
+            window.defaultReceiptMandatory = defaultReceiptMandatory;
+            window.feeStatusTitle = feeStatusTitle;
+            window.getNextReceiptNoForStaff = getNextReceiptNoForStaff;
+            window.getCollectorKey = getCollectorKey;
+
             const fsh = document.getElementById('fee-status-title-header');
             if(fsh && feeStatusTitle) fsh.textContent = feeStatusTitle;
 
